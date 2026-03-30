@@ -1,0 +1,259 @@
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { menuAPI } from '@/services/api/menu';
+import { ordersAPI } from '@/services/api/orders';
+import { userAPI } from '@/services/api/user';
+import { cartAPI } from '@/services/api/cart';
+import { paymentAPI } from '@/services/api/payment';
+import { reviewsAPI } from '@/services/api/reviews';
+import { notificationsAPI } from '@/services/api/notifications';
+import { authAPI } from '@/services/api/auth';
+import type { MenuQueryParams, CreateOrderDTO, AddressDTO, CreateReviewDTO, NotificationPrefsDTO, InitPaymentDTO, ResetPasswordDTO } from '@/types';
+
+// ─── MENU ──────────────────────────────────────────
+export const useCategories = () =>
+  useQuery({
+    queryKey: ['categories'],
+    queryFn: async () => {
+      const { data } = await menuAPI.getCategories();
+      return data.data;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+export const useMenuItems = (params?: MenuQueryParams) =>
+  useQuery({
+    queryKey: ['menuItems', params],
+    queryFn: async () => {
+      const { data } = await menuAPI.getItems(params);
+      return { items: data.data.data, pagination: data.data.pagination };
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+export const useMenuItem = (id: string) =>
+  useQuery({
+    queryKey: ['menuItem', id],
+    queryFn: async () => {
+      const { data } = await menuAPI.getItemById(id);
+      return data.data.item;
+    },
+    enabled: !!id,
+  });
+
+// ─── CART (server-synced) ──────────────────────────
+export const useServerCart = () =>
+  useQuery({
+    queryKey: ['cart'],
+    queryFn: async () => {
+      const { data } = await cartAPI.getCart();
+      return data.data;
+    },
+    staleTime: 60 * 1000,
+  });
+
+export const useAddCartItem = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: cartAPI.addItem,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['cart'] }),
+  });
+};
+
+export const useApplyCoupon = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (code: string) => cartAPI.applyCoupon(code),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['cart'] }),
+  });
+};
+
+export const useRemoveCoupon = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => cartAPI.removeCoupon(),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['cart'] }),
+  });
+};
+
+// ─── ORDERS ────────────────────────────────────────
+export const useCreateOrder = () =>
+  useMutation({
+    mutationFn: (data: CreateOrderDTO) => ordersAPI.create(data),
+  });
+
+export const useOrder = (id: string) =>
+  useQuery({
+    queryKey: ['order', id],
+    queryFn: async () => {
+      const { data } = await ordersAPI.getById(id);
+      return data.data.order;
+    },
+    enabled: !!id,
+  });
+
+export const useOrderTracking = (id: string) =>
+  useQuery({
+    queryKey: ['orderTracking', id],
+    queryFn: async () => {
+      const { data } = await ordersAPI.track(id);
+      return data.data;
+    },
+    enabled: !!id,
+    refetchInterval: 15000, // poll every 15s
+  });
+
+export const useUserOrders = (params?: { page?: number; limit?: number; status?: string }) =>
+  useQuery({
+    queryKey: ['userOrders', params],
+    queryFn: async () => {
+      const { data } = await ordersAPI.getUserOrders(params);
+      return { orders: data.data.orders, pagination: data.pagination };
+    },
+  });
+
+export const useCancelOrder = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason: string }) => ordersAPI.cancel(id, reason),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['userOrders'] }),
+  });
+};
+
+// ─── PAYMENT ───────────────────────────────────────
+export const useInitPayment = () =>
+  useMutation({
+    mutationFn: (data: InitPaymentDTO) => paymentAPI.initialize(data),
+  });
+
+export const useVerifyPayment = () =>
+  useMutation({
+    mutationFn: (reference: string) => paymentAPI.verify(reference),
+  });
+
+// ─── USER / PROFILE ───────────────────────────────
+export const useProfile = () =>
+  useQuery({
+    queryKey: ['profile'],
+    queryFn: async () => {
+      const { data } = await userAPI.getProfile();
+      return data.data.user;
+    },
+    staleTime: 60 * 1000,
+  });
+
+export const useUpdateProfile = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: userAPI.updateProfile,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['profile'] }),
+  });
+};
+
+export const useAddresses = () =>
+  useQuery({
+    queryKey: ['addresses'],
+    queryFn: async () => {
+      const { data } = await userAPI.getAddresses();
+      return data.data;
+    },
+  });
+
+export const useAddAddress = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: AddressDTO) => userAPI.addAddress(data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['addresses'] }),
+  });
+};
+
+export const useUpdateAddress = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: AddressDTO }) => userAPI.updateAddress(id, data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['addresses'] }),
+  });
+};
+
+export const useDeleteAddress = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => userAPI.deleteAddress(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['addresses'] }),
+  });
+};
+
+export const useSetDefaultAddress = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => userAPI.setDefaultAddress(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['addresses'] }),
+  });
+};
+
+export const useDeleteAccount = () =>
+  useMutation({
+    mutationFn: (password: string) => userAPI.deleteAccount(password),
+  });
+
+// ─── REVIEWS ──────────────────────────────────────
+export const useCreateReview = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: CreateReviewDTO) => reviewsAPI.create(data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['userOrders'] }),
+  });
+};
+
+export const useItemReviews = (itemId: string, params?: { page?: number; limit?: number; sort?: string }) =>
+  useQuery({
+    queryKey: ['itemReviews', itemId, params],
+    queryFn: async () => {
+      const { data } = await reviewsAPI.getByItem(itemId, params);
+      return { reviews: data.data.reviews, pagination: data.pagination };
+    },
+    enabled: !!itemId,
+  });
+
+export const useOrderReviews = (orderId: string) =>
+  useQuery({
+    queryKey: ['orderReviews', orderId],
+    queryFn: async () => {
+      const { data } = await reviewsAPI.getByOrder(orderId);
+      return data.data.reviews;
+    },
+    enabled: !!orderId,
+  });
+
+// ─── NOTIFICATIONS ────────────────────────────────
+export const useNotifications = (params?: { page?: number; limit?: number; unreadOnly?: boolean }) =>
+  useQuery({
+    queryKey: ['notifications', params],
+    queryFn: async () => {
+      const { data } = await notificationsAPI.getAll(params);
+      return { notifications: data.data.notifications, pagination: data.pagination };
+    },
+  });
+
+export const useMarkAllRead = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => notificationsAPI.markAllRead(),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['notifications'] }),
+  });
+};
+
+export const useUpdateNotificationPrefs = () =>
+  useMutation({
+    mutationFn: (prefs: NotificationPrefsDTO) => notificationsAPI.updatePreferences(prefs),
+  });
+
+// ─── AUTH (non-store, for one-off actions) ────────
+export const useResetPassword = () =>
+  useMutation({
+    mutationFn: (data: ResetPasswordDTO) => authAPI.resetPassword(data),
+  });
+
+export const useForgotPassword = () =>
+  useMutation({
+    mutationFn: (email: string) => authAPI.forgotPassword(email),
+  });
