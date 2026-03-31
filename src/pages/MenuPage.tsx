@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, X, Star, Plus, Filter, Flame, Loader2 } from "lucide-react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useCartStore } from "@/store/cartStore";
 import { useDebounce } from "@/hooks/useUtilHooks";
@@ -29,7 +30,6 @@ const MenuPage = () => {
     page,
     limit: 20,
   });
-
 
   // Use API data if available, otherwise use demo data
   const categories = apiCategories ?? [];
@@ -168,14 +168,16 @@ const MenuPage = () => {
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
-                    className="bg-card rounded-xl border border-border overflow-hidden shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-elevated)] transition-all group cursor-pointer"
-                    onClick={() => setSelectedItem(item)}
+                    className="bg-card rounded-xl border border-border overflow-hidden shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-elevated)] transition-all group"
                   >
-                    <div className="aspect-[4/3] bg-gradient-to-br from-primary/5 to-accent flex items-center justify-center relative overflow-hidden">
+                    <Link
+                      to={`/menu/${item._id}`}
+                      className="block aspect-[4/3] bg-gradient-to-br from-primary/5 to-accent relative overflow-hidden cursor-pointer"
+                    >
                       <img
                         src={item.image}
                         alt={item.name}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                       />
 
                       {item.isSpicy && (
@@ -190,7 +192,7 @@ const MenuPage = () => {
                           </span>
                         </div>
                       )}
-                    </div>
+                    </Link>
                     <div className="p-4">
                       <div className="flex items-center gap-1.5 mb-1">
                         <span className="text-xs text-muted-foreground bg-secondary px-2 py-0.5 rounded">

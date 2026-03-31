@@ -28,7 +28,6 @@ export interface Address {
   createdAt: string;
 }
 
-
 export interface Category {
   _id: string;
   name: string;
@@ -45,7 +44,11 @@ export interface CartItem {
   quantity: number;
   price: number;
   image?: string;
-  variants?: { groupName: string; selectedOption: string; additionalPrice: number }[];
+  variants?: {
+    groupName: string;
+    selectedOption: string;
+    additionalPrice: number;
+  }[];
   itemTotal: number;
   notes?: string;
 }
@@ -70,7 +73,7 @@ export interface Order {
   guestName?: string;
   items: OrderItem[];
   deliveryType: "delivery" | "collection";
-  deliveryAddress?: Omit<Address, 'id' | 'label' | 'isDefault' | 'createdAt'>;
+  deliveryAddress?: Omit<Address, "id" | "label" | "isDefault" | "createdAt">;
   estimatedDeliveryTime?: string;
   subtotal: number;
   deliveryFee: number;
@@ -80,7 +83,7 @@ export interface Order {
   couponCode?: string;
   status: OrderStatus;
   statusHistory: { status: string; updatedAt: string; note?: string }[];
-  paymentMethod: | "stripe" | "cash";
+  paymentMethod: "stripe" | "cash";
   paymentStatus: PaymentStatus;
   paymentReference?: string;
   specialInstructions?: string;
@@ -94,12 +97,28 @@ export interface OrderItem {
   menuItemName: string;
   quantity: number;
   price: number;
-  variants?: { variantGroup: string; selectedOption: string; additionalPrice: number }[];
+  variants?: {
+    variantGroup: string;
+    selectedOption: string;
+    additionalPrice: number;
+  }[];
   notes?: string;
 }
 
-export type OrderStatus = "pending" | "confirmed" | "preparing" | "out_for_delivery" | "delivered" | "cancelled" | "failed";
-export type PaymentStatus = "pending" | "initiated" | "successful" | "failed" | "refunded";
+export type OrderStatus =
+  | "pending"
+  | "confirmed"
+  | "preparing"
+  | "out_for_delivery"
+  | "delivered"
+  | "cancelled"
+  | "failed";
+export type PaymentStatus =
+  | "pending"
+  | "initiated"
+  | "successful"
+  | "failed"
+  | "refunded";
 
 export interface Review {
   id: string;
@@ -128,14 +147,18 @@ export interface Coupon {
 
 export interface Notification {
   id: string;
-  type: "order_confirmation" | "order_update" | "delivery" | "review" | "promotion";
+  type:
+    | "order_confirmation"
+    | "order_update"
+    | "delivery"
+    | "review"
+    | "promotion";
   title: string;
   message: string;
   isRead: boolean;
   readAt?: string;
   createdAt: string;
 }
-
 
 export interface VariantOption {
   _id: string;
@@ -168,4 +191,21 @@ export interface MenuItem {
   variants: VariantGroup[];
   createdAt: string; // ← new
   updatedAt: string; // ← new
+}
+
+export interface ContactInquiryDTO {
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+}
+
+export interface QuoteInquiryDTO {
+  name: string;
+  email: string;
+  phone: string;
+  guests: number;
+  eventDate: string;
+  eventTime: string;
+  details: string;
 }

@@ -7,18 +7,22 @@ import {
   Facebook,
   Twitter,
 } from "lucide-react";
-import {
-  APP_NAME,
-  STORE_ADDRESS,
-  STORE_PHONE,
-  STORE_EMAIL,
-  OPENING_HOURS,
-  NAV_LINKS,
-} from "@/utils/constants";
+import { APP_NAME, NAV_LINKS } from "@/utils/constants";
 import logoBlack from "@/assets/logo_black.png";
 import logoWhite from "@/assets/logo_white.png";
+import { useSettingsStore } from "@/store/settingsStore";
 
 const Footer = () => {
+  const { restaurant } = useSettingsStore();
+
+  const socialLinks = [
+    { icon: Instagram, url: restaurant.social?.instagram },
+    { icon: Facebook, url: restaurant.social?.facebook },
+    { icon: Twitter, url: restaurant.social?.twitter },
+    { icon: MapPin, url: restaurant.social?.linkedin },
+  ]
+
+  const openingHours = restaurant.openingHours ?? [];
   return (
     <footer className="bg-warm-brown text-cream">
       <div className="container-wide section-padding">
@@ -33,13 +37,15 @@ const Footer = () => {
               ingredients. Order online for delivery or pickup.
             </p>
             <div className="flex gap-3">
-              {[Instagram, Facebook, Twitter].map((Icon, i) => (
+              {socialLinks.map((link, i) => (
                 <a
                   key={i}
-                  href="#"
+                  href={link.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="w-10 h-10 rounded-full bg-cream/10 flex items-center justify-center hover:bg-primary transition-colors"
                 >
-                  <Icon className="w-4 h-4" />
+                  <link.icon className="w-4 h-4" />
                 </a>
               ))}
             </div>
@@ -71,15 +77,15 @@ const Footer = () => {
             <div className="space-y-3 text-sm text-cream/70">
               <div className="flex items-start gap-2">
                 <MapPin className="w-4 h-4 mt-0.5 shrink-0 text-primary" />
-                <span>{STORE_ADDRESS}</span>
+                <span>{restaurant.address}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Phone className="w-4 h-4 shrink-0 text-primary" />
-                <span>{STORE_PHONE}</span>
+                <span>{restaurant.phone}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Mail className="w-4 h-4 shrink-0 text-primary" />
-                <span>{STORE_EMAIL}</span>
+                <span>{restaurant.email}</span>
               </div>
             </div>
           </div>
@@ -90,7 +96,7 @@ const Footer = () => {
               Opening Hours
             </h4>
             <div className="space-y-2 text-sm text-cream/70">
-              {OPENING_HOURS.map((h) => (
+              {openingHours.map((h) => (
                 <div key={h.day} className="flex justify-between">
                   <span>{h.day}</span>
                   <span>{h.hours}</span>
@@ -105,7 +111,7 @@ const Footer = () => {
             &copy; {new Date().getFullYear()} {APP_NAME}. All rights reserved.
           </p>
           <div className="flex gap-6">
-            <Link
+            {/* <Link
               to="/privacy-policy"
               className="hover:text-cream transition-colors"
             >
@@ -113,7 +119,7 @@ const Footer = () => {
             </Link>
             <Link to="/terms" className="hover:text-cream transition-colors">
               Terms of Service
-            </Link>
+            </Link> */}
           </div>
         </div>
       </div>

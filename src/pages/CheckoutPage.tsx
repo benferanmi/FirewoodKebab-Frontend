@@ -42,7 +42,7 @@ const CheckoutPage = () => {
   const [city, setCity] = useState('');
   const [state, setState] = useState('');
   const [zipCode, setZipCode] = useState('');
-  const [country, setCountry] = useState('Nigeria');
+  const [country, setCountry] = useState('');
 
   // Guest fields
   const [guestName, setGuestName] = useState('');

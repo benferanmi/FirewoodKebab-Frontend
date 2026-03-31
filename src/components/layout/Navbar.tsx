@@ -12,6 +12,7 @@ import logoWhite from "@/assets/logo_white.png";
 import logoBlackTransparent from "@/assets/logo_black_transparent.png";
 import { useEffect } from "react";
 import { Loader2 } from "lucide-react";
+import { useSettingsStore } from "@/store/settingsStore";
 
 const Navbar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -27,6 +28,12 @@ const Navbar = () => {
   const [cartSyncing, setCartSyncing] = useState(false);
 
   const isTransparent = isHome && !scrolled && !mobileOpen;
+
+  const fetchSettings = useSettingsStore((s) => s.fetch);
+
+  useEffect(() => {
+    fetchSettings();
+  }, []);
 
   useEffect(() => {
     if (isAuthenticated()) {

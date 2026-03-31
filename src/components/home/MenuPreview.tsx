@@ -6,6 +6,7 @@ import { useMenuItems } from '@/hooks/useApi';
 import { formatPrice } from '@/utils/helpers';
 import type { MenuItem } from '@/types';
 import { toast } from 'sonner';
+import { Link } from 'react-router-dom';
 
 const MenuPreview = () => {
   const addItem = useCartStore((s) => s.addItem);
@@ -52,13 +53,22 @@ const MenuPreview = () => {
               transition={{ delay: i * 0.1 }}
               className="bg-card rounded-xl border border-border overflow-hidden shadow-card hover:shadow-elevated transition-shadow group"
             >
-              <div className="aspect-[4/3] bg-gradient-to-br from-primary/10 to-accent flex items-center justify-center overflow-hidden">
-                {item.image ? (
-                  <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
-                ) : (
-                  <span className="text-4xl">🍽️</span>
-                )}
-              </div>
+              <Link
+                to={`/menu/${item._id}`}
+                className="block aspect-[4/3] bg-gradient-to-br from-primary/10 to-accent flex items-center justify-center overflow-hidden cursor-pointer"
+              >
+                <div className="w-full h-full overflow-hidden">
+                  {item.image ? (
+                    <img
+                      src={item.image}
+                      alt={item.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                  ) : (
+                    <span className="text-4xl flex items-center justify-center h-full">🍽️</span>
+                  )}
+                </div>
+              </Link>
               <div className="p-4">
                 <div className="flex items-center gap-1 mb-1">
                   <Star className="w-3.5 h-3.5 fill-warm-gold text-warm-gold" />
@@ -85,7 +95,7 @@ const MenuPreview = () => {
 
         <div className="text-center mt-10">
           <Button variant="outline" size="lg" asChild>
-            <a href="/menu">View Full Menu</a>
+            <Link to="/menu">View Full Menu</Link>
           </Button>
         </div>
       </div>

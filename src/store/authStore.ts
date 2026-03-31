@@ -59,8 +59,9 @@ export const useAuthStore = create<AuthStore>()(
         }
       },
 
+
       logout: () => {
-        authAPI.logout().catch(() => {});
+        authAPI.logout(localStorage.getItem("refreshToken") || "").catch(() => {});
         localStorage.removeItem("accessToken");
         localStorage.removeItem("refreshToken");
         useCartStore.getState().clearCart();

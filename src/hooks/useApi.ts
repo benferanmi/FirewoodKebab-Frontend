@@ -107,7 +107,8 @@ export const useUserOrders = (params?: { page?: number; limit?: number; status?:
     queryKey: ['userOrders', params],
     queryFn: async () => {
       const { data } = await ordersAPI.getUserOrders(params);
-      return { orders: data.data.orders, pagination: data.pagination };
+      console.log("Fetched user orders:", data);
+      return { orders: data.data.data, pagination: data.data.pagination };
     },
   });
 
