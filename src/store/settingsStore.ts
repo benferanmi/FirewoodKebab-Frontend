@@ -9,7 +9,13 @@ interface RestaurantInfo {
   address?: string;
   phone?: string;
   email?: string;
-  openingHours?: { day: string; hours: string }[];
+  openingHours?: {
+    [day: string]: {
+      open: boolean;
+      startTime: string;
+      endTime: string;
+    };
+  };
   website?: string;
   social?: {
     facebook?: string;

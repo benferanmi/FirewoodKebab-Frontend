@@ -20,9 +20,18 @@ const Footer = () => {
     { icon: Facebook, url: restaurant.social?.facebook },
     { icon: Twitter, url: restaurant.social?.twitter },
     { icon: MapPin, url: restaurant.social?.linkedin },
-  ]
+  ].filter((link) => link.url);
 
-  const openingHours = restaurant.openingHours ?? [];
+  // Convert openingHours object to array format for rendering
+  const openingHours = restaurant.openingHours
+    ? Object.entries(restaurant.openingHours).map(([day, hours]) => ({
+        day,
+        display: hours.open
+          ? `${hours.startTime} - ${hours.endTime}`
+          : "Closed",
+      }))
+    : [];
+
   return (
     <footer className="bg-warm-brown text-cream">
       <div className="container-wide section-padding">
@@ -99,7 +108,7 @@ const Footer = () => {
               {openingHours.map((h) => (
                 <div key={h.day} className="flex justify-between">
                   <span>{h.day}</span>
-                  <span>{h.hours}</span>
+                  <span>{h.display}</span>
                 </div>
               ))}
             </div>
