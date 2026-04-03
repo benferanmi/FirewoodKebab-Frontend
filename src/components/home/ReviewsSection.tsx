@@ -34,9 +34,9 @@ const reviews = [
 const AGGREGATE = { rating: 4.9, count: "2,000+" };
 
 const AVATAR_COLORS: Record<string, { bg: string; text: string }> = {
-  AK: { bg: "hsl(var(--primary) / 0.15)", text: "hsl(var(--primary))" },
-  FO: { bg: "hsl(200 60% 92%)", text: "hsl(200 60% 35%)" },
-  CN: { bg: "hsl(150 40% 90%)", text: "hsl(150 40% 30%)" },
+  AK: { bg: "hsl(var(--primary) / 0.18)", text: "hsl(var(--primary))" },
+  FO: { bg: "hsl(40 95% 75% / 0.2)", text: "hsl(40 95% 50%)" },
+  CN: { bg: "hsl(150 70% 50% / 0.15)", text: "hsl(150 70% 45%)" },
 };
 
 const StarRow = ({
@@ -70,10 +70,19 @@ const StarRow = ({
 const ReviewsSection = () => {
   return (
     <section
-      className="section-padding"
+      className="section-padding relative overflow-hidden"
       style={{ background: "hsl(var(--background))" }}
     >
-      <div className="container-wide">
+      {/* Subtle glow accent */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background:
+            "radial-gradient(ellipse 120% 50% at 50% 50%, hsl(var(--primary) / 0.04) 0%, transparent 70%)",
+        }}
+      />
+
+      <div className="container-wide relative z-10">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -114,13 +123,22 @@ const ReviewsSection = () => {
               </p>
             </div>
 
-            {/* Aggregate rating badge — more refined */}
-            <div
-              className="flex items-center gap-5 px-7 py-5 rounded-2xl shrink-0 self-start md:self-auto"
+            {/* Aggregate rating badge — refined */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              className="flex items-center gap-5 px-7 py-5 rounded-2xl shrink-0 self-start md:self-auto transition-all duration-300"
               style={{
                 background: "hsl(var(--card))",
                 border: "1px solid hsl(var(--border))",
                 boxShadow: "var(--shadow-card)",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.boxShadow = "var(--shadow-elevated)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.boxShadow = "var(--shadow-card)";
               }}
             >
               <div>
@@ -153,7 +171,7 @@ const ReviewsSection = () => {
                   happy orders
                 </p>
               </div>
-            </div>
+            </motion.div>
           </div>
         </motion.div>
 
@@ -180,7 +198,7 @@ const ReviewsSection = () => {
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.boxShadow = "var(--shadow-elevated)";
-                  e.currentTarget.style.transform = "translateY(-3px)";
+                  e.currentTarget.style.transform = "translateY(-4px)";
                   e.currentTarget.style.borderColor =
                     "hsl(var(--primary) / 0.25)";
                 }}
@@ -190,8 +208,8 @@ const ReviewsSection = () => {
                   e.currentTarget.style.borderColor = "hsl(var(--border))";
                 }}
               >
-                {/* Decorative quote icon — top right */}
-                <div className="absolute top-5 right-6 opacity-[0.06] pointer-events-none select-none">
+                {/* Decorative quote icon — top right, warmer */}
+                <div className="absolute top-5 right-6 opacity-[0.08] pointer-events-none select-none">
                   <Quote
                     className="w-16 h-16"
                     style={{ color: "hsl(var(--primary))" }}
@@ -209,13 +227,14 @@ const ReviewsSection = () => {
                   "{review.comment}"
                 </p>
 
-                {/* Dish tag */}
+                {/* Dish tag — warmer styling */}
                 <div
-                  className="text-[10px] font-semibold tracking-widest uppercase px-3 py-1.5 rounded-full self-start mb-5"
+                  className="text-[10px] font-semibold tracking-widest uppercase px-3 py-1.5 rounded-full self-start mb-5 transition-all duration-300"
                   style={{
-                    background: "hsl(var(--primary) / 0.1)",
+                    background: "hsl(var(--primary) / 0.12)",
                     color: "hsl(var(--primary))",
                     fontFamily: "var(--font-body)",
+                    border: "1px solid hsl(var(--primary) / 0.15)",
                   }}
                 >
                   {review.dish}
@@ -227,12 +246,13 @@ const ReviewsSection = () => {
                   style={{ borderTop: "1px solid hsl(var(--border))" }}
                 >
                   <div className="flex items-center gap-3">
-                    {/* Avatar — slightly bigger */}
+                    {/* Avatar — polished */}
                     <div
-                      className="w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
+                      className="w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-all duration-300"
                       style={{
                         background: avatarStyle.bg,
                         color: avatarStyle.text,
+                        border: `1px solid ${avatarStyle.bg}`,
                       }}
                     >
                       {review.initials}

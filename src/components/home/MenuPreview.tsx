@@ -53,16 +53,18 @@ const SkeletonCard = () => (
 const ImageFallback = () => (
   <div
     className="w-full h-full flex items-center justify-center"
-    style={{ background: "linear-gradient(135deg, #1c1a16, #0e0d0b)" }}
+    style={{
+      background: "linear-gradient(135deg, #2a2318 0%, #1a1410 100%)",
+    }}
   >
     <Flame
       className="w-12 h-12"
-      style={{ color: "hsl(var(--primary) / 0.4)" }}
+      style={{ color: "hsl(var(--primary) / 0.35)" }}
     />
   </div>
 );
 
-//   Main component d
+//   Main component
 const MenuPreview = () => {
   const addItem = useCartStore((s) => s.addItem);
   // Limit to 8 items max — homepage is a showcase, not the full menu
@@ -87,10 +89,19 @@ const MenuPreview = () => {
 
   return (
     <section
-      className="section-padding"
+      className="section-padding relative overflow-hidden"
       style={{ background: "var(--gradient-warm)" }}
     >
-      <div className="container-wide">
+      {/* Decorative glow in background */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background:
+            "radial-gradient(ellipse 80% 40% at 50% 0%, hsl(var(--primary) / 0.08) 0%, transparent 70%)",
+        }}
+      />
+
+      <div className="container-wide relative z-10">
         {/* Section header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -164,9 +175,9 @@ const MenuPreview = () => {
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.boxShadow = "var(--shadow-elevated)";
-                    e.currentTarget.style.transform = "translateY(-4px)";
+                    e.currentTarget.style.transform = "translateY(-6px)";
                     e.currentTarget.style.borderColor =
-                      "hsl(var(--primary) / 0.3)";
+                      "hsl(var(--primary) / 0.35)";
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.boxShadow = "var(--shadow-card)";
@@ -174,41 +185,53 @@ const MenuPreview = () => {
                     e.currentTarget.style.borderColor = "hsl(var(--border))";
                   }}
                 >
-                  {/* Image — taller aspect ratio for a richer feel */}
+                  {/* Image — ENHANCED with overlay gradients */}
                   <Link
                     to={`/menu/${item._id}`}
-                    className="block aspect-[3/2] overflow-hidden relative"
+                    className="block aspect-[4/3] overflow-hidden relative group/img"
                   >
                     {item.image ? (
-                      <img
-                        src={item.image}
-                        alt={item.name}
-                        className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-500"
-                        style={{ transform: "scale(1)" }}
-                      />
+                      <>
+                        <img
+                          src={item.image}
+                          alt={item.name}
+                          className="w-full h-full object-cover transition-transform duration-500 group-hover/img:scale-110"
+                        />
+                        {/* Rich gradient overlay — warm at bottom */}
+                        <div
+                          className="absolute inset-0 opacity-0 group-hover/img:opacity-100 transition-opacity duration-300"
+                          style={{
+                            background:
+                              "linear-gradient(to top, rgba(0,0,0,0.4), transparent 60%)",
+                          }}
+                        />
+                      </>
                     ) : (
                       <ImageFallback />
                     )}
 
-                    {/* "Popular" badge on first 4 items */}
+                    {/* Premium badge — updated styling */}
                     {i < 4 && (
-                      <span
-                        className="absolute top-3 left-3 text-[10px] font-bold tracking-wide uppercase px-2.5 py-1 rounded-full"
+                      <motion.span
+                        initial={{ opacity: 0, y: -8 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        className="absolute top-4 right-4 text-[10px] font-bold tracking-wider uppercase px-3 py-1.5 rounded-full"
                         style={{
-                          background: "hsl(var(--primary))",
+                          background: "hsl(var(--primary) / 0.95)",
                           color: "#fff",
-                          boxShadow: "0 2px 8px hsl(var(--primary) / 0.5)",
+                          boxShadow: "0 4px 12px hsl(var(--primary) / 0.6)",
+                          backdropFilter: "blur(8px)",
                         }}
                       >
-                        🔥 Popular
-                      </span>
+                        🔥 Most Loved
+                      </motion.span>
                     )}
 
                     {/* Unavailable overlay */}
                     {!item.isAvailable && (
                       <div
                         className="absolute inset-0 flex items-center justify-center"
-                        style={{ background: "rgba(0,0,0,0.55)" }}
+                        style={{ background: "rgba(0,0,0,0.65)" }}
                       >
                         <span
                           className="text-xs font-semibold px-3 py-1.5 rounded-full"
@@ -264,7 +287,7 @@ const MenuPreview = () => {
                     {/* Price + Add */}
                     <div className="flex items-center justify-between">
                       <span
-                        className="font-bold text-lg"
+                        className="font-bold text-lg transition-colors duration-300"
                         style={{ color: "hsl(var(--primary))" }}
                       >
                         {formatPrice(item.price)}
@@ -273,23 +296,23 @@ const MenuPreview = () => {
                         disabled={!item.isAvailable}
                         onClick={() => handleAdd(item)}
                         aria-label={`Add ${item.name} to cart`}
-                        className="w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed"
+                        className="w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed"
                         style={{
                           background: "hsl(var(--primary))",
                           color: "#fff",
-                          boxShadow: "0 2px 8px hsl(var(--primary) / 0.35)",
+                          boxShadow: "0 4px 12px hsl(var(--primary) / 0.4)",
                         }}
                         onMouseEnter={(e) => {
                           if (item.isAvailable) {
-                            e.currentTarget.style.transform = "scale(1.12)";
+                            e.currentTarget.style.transform = "scale(1.15)";
                             e.currentTarget.style.boxShadow =
-                              "0 4px 16px hsl(var(--primary) / 0.55)";
+                              "0 6px 20px hsl(var(--primary) / 0.65)";
                           }
                         }}
                         onMouseLeave={(e) => {
                           e.currentTarget.style.transform = "scale(1)";
                           e.currentTarget.style.boxShadow =
-                            "0 2px 8px hsl(var(--primary) / 0.35)";
+                            "0 4px 12px hsl(var(--primary) / 0.4)";
                         }}
                       >
                         <Plus className="w-4 h-4" />
@@ -310,11 +333,21 @@ const MenuPreview = () => {
           <Link to="/menu">
             <Button
               size="lg"
-              className="rounded-full px-10 font-semibold"
+              className="rounded-full px-10 font-semibold transition-all duration-300"
               style={{
                 background: "hsl(var(--primary))",
                 color: "#fff",
-                boxShadow: "0 4px 20px hsl(var(--primary) / 0.35)",
+                boxShadow: "0 6px 24px hsl(var(--primary) / 0.4)",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(-2px)";
+                e.currentTarget.style.boxShadow =
+                  "0 8px 32px hsl(var(--primary) / 0.6)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow =
+                  "0 6px 24px hsl(var(--primary) / 0.4)";
               }}
             >
               Explore Full Menu
