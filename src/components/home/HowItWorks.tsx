@@ -1,61 +1,155 @@
 import { motion } from 'framer-motion';
-import { UtensilsCrossed, Truck, Clock, Star } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { ArrowRight } from 'lucide-react';
 
 const steps = [
   {
-    icon: UtensilsCrossed,
-    title: 'Browse Menu',
-    description: 'Explore our rich selection of authentic dishes',
+    num: '01',
+    title: 'Browse\nthe Menu',
+    description:
+      'Explore our full selection of firewood-grilled dishes, platters, and catering options.',
   },
   {
-    icon: Clock,
-    title: 'Place Order',
-    description: 'Customize your meal and checkout in seconds',
+    num: '02',
+    title: 'Place\nYour Order',
+    description:
+      'Customize your meal, choose delivery or pickup, and check out in seconds.',
   },
   {
-    icon: Truck,
-    title: 'Fast Delivery',
-    description: 'Hot food delivered straight to your door',
+    num: '03',
+    title: 'Fast\nDelivery',
+    description:
+      'We prep your order fresh and get it to your door hot — usually within 30 minutes.',
   },
   {
-    icon: Star,
-    title: 'Enjoy & Rate',
-    description: 'Savor every bite and share your experience',
+    num: '04',
+    title: 'Enjoy\n& Rate',
+    description:
+      'Savor every bite. Leave a review and help others discover their next favorite.',
   },
 ];
 
 const HowItWorks = () => {
   return (
-    <section className="section-padding bg-secondary/50">
+    <section
+      className="section-padding overflow-hidden"
+      style={{ backgroundColor: '#0e0d0b' }}
+    >
       <div className="container-wide">
+
+        {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="text-center mb-12"
+          className="mb-16 md:mb-20"
         >
-          <h2 className="font-display text-3xl md:text-4xl font-bold mb-3">How It Works</h2>
-          <p className="text-muted-foreground max-w-md mx-auto">
-            Getting your favorite meal is easy as 1-2-3-4
-          </p>
+          {/* Eyebrow */}
+          <div className="flex items-center gap-3 mb-5">
+            <span className="block w-8 h-px" style={{ background: 'hsl(var(--primary))' }} />
+            <span
+              className="text-[11px] font-semibold tracking-[0.22em] uppercase"
+              style={{ color: 'hsl(var(--primary))', fontFamily: 'var(--font-body)' }}
+            >
+              Simple Process
+            </span>
+          </div>
+          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
+            <h2
+              className="font-display font-bold text-white leading-tight"
+              style={{ fontSize: 'clamp(2rem, 4vw, 3rem)' }}
+            >
+              From craving to<br />
+              <em className="not-italic" style={{ color: 'hsl(var(--primary))' }}>
+                doorstep
+              </em>
+              , in four steps.
+            </h2>
+            <Link
+              to="/menu"
+              className="inline-flex items-center gap-2 text-sm font-semibold shrink-0 transition-colors"
+              style={{ color: 'hsl(var(--primary))' }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = '#fff';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = 'hsl(var(--primary))';
+              }}
+            >
+              Order Now
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
         </motion.div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+        {/* Steps grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-px"
+          style={{ background: 'rgba(255,255,255,0.06)', borderRadius: '16px', overflow: 'hidden' }}
+        >
           {steps.map((step, i) => (
             <motion.div
-              key={step.title}
-              initial={{ opacity: 0, y: 20 }}
+              key={step.num}
+              initial={{ opacity: 0, y: 24 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ delay: i * 0.1 }}
-              className="text-center"
+              transition={{ delay: i * 0.1, duration: 0.5 }}
+              className="relative p-8 md:p-10 group"
+              style={{ backgroundColor: '#0e0d0b' }}
             >
-              <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                <step.icon className="w-7 h-7 text-primary" />
+              {/* Large step number — decorative background */}
+              <div
+                className="font-display font-bold leading-none mb-8 select-none transition-colors duration-300"
+                style={{
+                  fontSize: 'clamp(4rem, 7vw, 6rem)',
+                  color: '#ffffff',
+                  lineHeight: 1,
+                }}
+              >
+                {step.num}
               </div>
-              <div className="text-xs font-bold text-primary mb-2">STEP {i + 1}</div>
-              <h3 className="font-display text-lg font-semibold mb-2">{step.title}</h3>
-              <p className="text-sm text-muted-foreground">{step.description}</p>
+
+              {/* Small orange number label */}
+              <div
+                className="text-xs font-bold tracking-[0.18em] uppercase mb-3"
+                style={{ color: 'hsl(var(--primary))', fontFamily: 'var(--font-body)' }}
+              >
+                Step {step.num}
+              </div>
+
+              {/* Title */}
+              <h3
+                className="font-display font-bold text-white mb-4 leading-tight"
+                style={{
+                  fontSize: 'clamp(1.25rem, 2vw, 1.5rem)',
+                  whiteSpace: 'pre-line',
+                }}
+              >
+                {step.title}
+              </h3>
+
+              {/* Description */}
+              <p
+                className="text-sm leading-relaxed"
+                style={{ color: 'rgba(255,255,255,0.42)', fontFamily: 'var(--font-body)' }}
+              >
+                {step.description}
+              </p>
+
+              {/* Connector arrow — hidden on last item and mobile */}
+              {i < steps.length - 1 && (
+                <div
+                  className="hidden lg:block absolute -right-3 top-1/2 -translate-y-1/2 z-10 w-6 h-6 rounded-full flex items-center justify-center"
+                  style={{
+                    background: '#0e0d0b',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                  }}
+                >
+                  <ArrowRight
+                    className="w-3 h-3 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
+                    style={{ color: 'hsl(var(--primary))' }}
+                  />
+                </div>
+              )}
             </motion.div>
           ))}
         </div>

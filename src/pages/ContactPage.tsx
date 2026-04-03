@@ -25,7 +25,14 @@ const ContactPage = () => {
     { icon: Mail, label: "Email", value: restaurant.email },
   ].filter((item) => item.value); // hide items with no value set
 
-  const openingHours = restaurant.openingHours ?? [];
+  const openingHours = restaurant.openingHours
+    ? Object.entries(restaurant.openingHours).map(([day, hours]) => ({
+        day,
+        display: hours.open
+          ? `${hours.startTime} - ${hours.endTime}`
+          : "Closed",
+      }))
+    : [];
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -110,7 +117,7 @@ const ContactPage = () => {
                   <div key={h.day} className="flex justify-between text-sm">
                     <span className="text-muted-foreground">{h.day}</span>
                     <span className="font-medium text-foreground">
-                      {h.hours}
+                      {h.display}
                     </span>
                   </div>
                 ))}
@@ -176,7 +183,7 @@ const ContactPage = () => {
         </div>
       </section>
 
-      {/* Map */}
+      {/* Map
       <section className="h-[350px] bg-secondary/50 flex items-center justify-center">
         <div className="text-center text-muted-foreground">
           <MapPin className="w-10 h-10 mx-auto mb-2 text-primary/50" />
@@ -184,7 +191,7 @@ const ContactPage = () => {
             Map integration available with Google Maps API key
           </p>
         </div>
-      </section>
+      </section> */}
     </main>
   );
 };

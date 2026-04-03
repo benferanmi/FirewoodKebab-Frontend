@@ -1,5 +1,5 @@
 export const formatPrice = (amount: number): string => {
-  return `$${amount.toLocaleString()}`;
+  return `$${amount?.toLocaleString()}`;
 };
 
 export const truncateText = (text: string, maxLength: number): string => {

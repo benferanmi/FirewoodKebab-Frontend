@@ -1,23 +1,37 @@
-import axios from 'axios';
-import { useAuthStore } from '@/store/authStore';
+import axios from "axios";
+import { useAuthStore } from "@/store/authStore";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 const client = axios.create({
   baseURL: `${API_BASE_URL}/api/v1`,
-  headers: { 'Content-Type': 'application/json' },
+  headers: { "Content-Type": "application/json" },
 });
 
 // ── Request: attach access token ──────────────────────────────────────────────
 client.interceptors.request.use((config) => {
-  const token = localStorage.getItem('accessToken');
-  if (token) config.headers.Authorization = `Bearer ${token}`;
+  // Check if user is authenticated
+  const isAuthenticated = !!localStorage.getItem("accessToken");
+
+  // If not authenticated, check for guest cartId
+  if (!isAuthenticated) {
+    const cartId = localStorage.getItem("cartId");
+    if (cartId) {
+      // Add cartId to request header
+      config.headers["X-Cart-ID"] = cartId;
+      console.debug(`[API] Request header X-Cart-ID: ${cartId}`);
+    }
+  }
+
   return config;
 });
 
 // ── Token refresh state ───────────────────────────────────────────────────────
 let isRefreshing = false;
-let failedQueue: { resolve: (token: string) => void; reject: (err: unknown) => void }[] = [];
+let failedQueue: {
+  resolve: (token: string) => void;
+  reject: (err: unknown) => void;
+}[] = [];
 
 const processQueue = (error: unknown, token: string | null = null) => {
   failedQueue.forEach((p) => (error ? p.reject(error) : p.resolve(token!)));
@@ -26,13 +40,22 @@ const processQueue = (error: unknown, token: string | null = null) => {
 
 // ── Response: handle token errors ─────────────────────────────────────────────
 client.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    const cartId = response.headers["x-cart-id"];
+    if (cartId) {
+      localStorage.setItem("cartId", cartId);
+      console.debug(
+        `[API] Response header X-Cart-ID: ${cartId} (saved to localStorage)`,
+      );
+    }
+    return response;
+  },
   async (error) => {
     const originalRequest = error.config;
     const errorCode = error.response?.data?.error;
 
     // Only intercept token errors, pass everything else through
-    if (errorCode !== 'TOKEN_EXPIRED' && errorCode !== 'INVALID_TOKEN') {
+    if (errorCode !== "TOKEN_EXPIRED" && errorCode !== "INVALID_TOKEN") {
       return Promise.reject(error);
     }
 
@@ -59,18 +82,18 @@ client.interceptors.response.use(
     isRefreshing = true;
 
     try {
-      const refreshToken = localStorage.getItem('refreshToken');
-      if (!refreshToken) throw new Error('No refresh token');
+      const refreshToken = localStorage.getItem("refreshToken");
+      if (!refreshToken) throw new Error("No refresh token");
 
       const { data } = await axios.post(
         `${API_BASE_URL}/api/v1/auth/refresh-token`,
-        { refreshToken }
+        { refreshToken },
       );
 
       const { accessToken, refreshToken: newRefreshToken } = data.data;
 
-      localStorage.setItem('accessToken', accessToken);
-      localStorage.setItem('refreshToken', newRefreshToken);
+      localStorage.setItem("accessToken", accessToken);
+      localStorage.setItem("refreshToken", newRefreshToken);
       useAuthStore.setState({ accessToken, refreshToken: newRefreshToken });
       client.defaults.headers.common.Authorization = `Bearer ${accessToken}`;
 
@@ -84,7 +107,7 @@ client.interceptors.response.use(
     } finally {
       isRefreshing = false;
     }
-  }
+  },
 );
 
 export default client;

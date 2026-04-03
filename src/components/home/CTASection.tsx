@@ -1,36 +1,110 @@
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Flame } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const CTASection = () => {
   return (
-    <section className="relative py-20 md:py-28 overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-r from-primary to-spice-red" />
-      <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxjaXJjbGUgY3g9IjIwIiBjeT0iMjAiIHI9IjIiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4xKSIvPjwvZz48L3N2Zz4=')] opacity-50" />
-      
-      <div className="relative z-10 container-wide text-center">
+    <section
+      className="relative py-24 md:py-32 overflow-hidden"
+      style={{ backgroundColor: '#0e0d0b' }}
+    >
+      {/* Ambient orange glow — centered, subtle */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background:
+            'radial-gradient(ellipse 60% 50% at 50% 100%, hsl(var(--primary) / 0.12) 0%, transparent 70%)',
+        }}
+      />
+
+      {/* Top border line */}
+      <div
+        className="absolute top-0 left-0 right-0 h-px"
+        style={{
+          background:
+            'linear-gradient(to right, transparent, rgba(255,255,255,0.08), transparent)',
+        }}
+      />
+
+      <div className="relative z-10 container-wide">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="max-w-3xl mx-auto text-center"
         >
-          <h2 className="font-display text-3xl sm:text-4xl md:text-5xl font-bold text-primary-foreground mb-4">
-            Ready to Order?
-          </h2>
-          <p className="text-primary-foreground/80 text-lg mb-8 max-w-lg mx-auto">
-            Delicious food is just a few clicks away. Order now and enjoy authentic flavors at your doorstep.
-          </p>
-          <Link to="/menu">
-            <Button
-              size="lg"
-              variant="secondary"
-              className="text-foreground font-semibold px-8"
+          {/* Flame icon accent */}
+          <div
+            className="inline-flex items-center justify-center w-14 h-14 rounded-2xl mb-8 mx-auto"
+            style={{ background: 'hsl(var(--primary) / 0.14)', border: '1px solid hsl(var(--primary) / 0.2)' }}
+          >
+            <Flame className="w-6 h-6 text-primary" />
+          </div>
+
+          {/* Eyebrow */}
+          <div className="flex items-center justify-center gap-3 mb-6">
+            <span className="block w-8 h-px" style={{ background: 'hsl(var(--primary))' }} />
+            <span
+              className="text-[11px] font-semibold tracking-[0.22em] uppercase"
+              style={{ color: 'hsl(var(--primary))', fontFamily: 'var(--font-body)' }}
             >
               Order Now
-              <ArrowRight className="w-4 h-4 ml-2" />
-            </Button>
-          </Link>
+            </span>
+            <span className="block w-8 h-px" style={{ background: 'hsl(var(--primary))' }} />
+          </div>
+
+          {/* Headline */}
+          <h2
+            className="font-display font-bold text-white leading-tight mb-6"
+            style={{ fontSize: 'clamp(2.4rem, 5vw, 4rem)' }}
+          >
+            Hungry? We're<br />
+            <em className="not-italic" style={{ color: 'hsl(var(--primary))' }}>
+              already firing up
+            </em>{' '}
+            the grill.
+          </h2>
+
+          {/* Subtext */}
+          <p
+            className="text-base md:text-lg leading-relaxed mb-10 max-w-md mx-auto"
+            style={{ color: 'rgba(255,255,255,0.45)', fontFamily: 'var(--font-body)' }}
+          >
+            Order online for delivery or pickup. Freshly grilled, straight to your door.
+          </p>
+
+          {/* CTA buttons */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <Link to="/menu">
+              <Button
+                size="lg"
+                className="px-8 rounded-xl font-semibold text-base"
+              >
+                Order Now
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            </Link>
+            <Link to="/menu#catering">
+              <Button
+                size="lg"
+                variant="ghost"
+                className="px-8 rounded-xl font-semibold text-base"
+                style={{ color: 'rgba(255,255,255,0.6)', border: '1px solid rgba(255,255,255,0.12)' }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = '#fff';
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = 'rgba(255,255,255,0.6)';
+                  e.currentTarget.style.background = 'transparent';
+                }}
+              >
+                Catering Enquiry
+              </Button>
+            </Link>
+          </div>
         </motion.div>
       </div>
     </section>
