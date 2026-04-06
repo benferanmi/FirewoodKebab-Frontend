@@ -53,6 +53,7 @@ export interface AddCartItemDTO {
     additionalPrice: number;
   }[];
   notes?: string;
+  cartId?: string; // For guest users
 }
 
 export interface CreateOrderDTO {
@@ -71,6 +72,8 @@ export interface CreateOrderDTO {
   guestName?: string;
   specialInstructions?: string;
   paymentMethod: "cash" | "stripe";
+  userId?: string;
+  cartId?: string;
 }
 
 export interface MenuQueryParams {

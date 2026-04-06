@@ -1,22 +1,31 @@
-import { useState } from 'react';
-import { useNavigate, Link, useSearchParams } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { motion, AnimatePresence } from 'framer-motion';
-import { MapPin, Store, CreditCard, FileText, ChevronDown, ChevronUp, Loader2, ShoppingBag } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Separator } from '@/components/ui/separator';
-import { useCartStore } from '@/store/cartStore';
-import { useAuthStore } from '@/store/authStore';
-import { useCreateOrder } from '@/hooks/useApi';
-import { formatPrice } from '@/utils/helpers';
-import { STORE_ADDRESS } from '@/utils/constants';
-import { toast } from 'sonner';
-import type { CreateOrderDTO } from '@/types';
+import { useState } from "react";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  MapPin,
+  Store,
+  CreditCard,
+  FileText,
+  ChevronDown,
+  ChevronUp,
+  Loader2,
+  ShoppingBag,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Separator } from "@/components/ui/separator";
+import { useCartStore } from "@/store/cartStore";
+import { useAuthStore } from "@/store/authStore";
+import { useCreateOrder } from "@/hooks/useApi";
+import { formatPrice } from "@/utils/helpers";
+import { STORE_ADDRESS } from "@/utils/constants";
+import { toast } from "sonner";
+import type { CreateOrderDTO } from "@/types";
 
 const CheckoutPage = () => {
   const navigate = useNavigate();
@@ -33,30 +42,37 @@ const CheckoutPage = () => {
 
   const createOrderMutation = useCreateOrder();
 
-  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'stripe'>('stripe');
-  const [instructions, setInstructions] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<"cash" | "stripe">(
+    "stripe",
+  );
+  const [instructions, setInstructions] = useState("");
   const [showSummary, setShowSummary] = useState(true);
 
   // Address fields
-  const [street, setStreet] = useState('');
-  const [city, setCity] = useState('');
-  const [state, setState] = useState('');
-  const [zipCode, setZipCode] = useState('');
-  const [country, setCountry] = useState('');
+  const [street, setStreet] = useState("");
+  const [city, setCity] = useState("");
+  const [state, setState] = useState("");
+  const [zipCode, setZipCode] = useState("");
+  const [country, setCountry] = useState("");
 
   // Guest fields
-  const [guestName, setGuestName] = useState('');
-  const [guestEmail, setGuestEmail] = useState('');
-  const [guestPhone, setGuestPhone] = useState('');
+  const [guestName, setGuestName] = useState("");
+  const [guestEmail, setGuestEmail] = useState("");
+  const [guestPhone, setGuestPhone] = useState("");
 
   const subtotal = getSubtotal();
   const deliveryFee = getDeliveryFee();
+
+  console.log(deliveryFee)
   const discount = getDiscount();
   const total = getTotal();
 
   if (items.length === 0) {
     return (
-      <main className="min-h-screen" style={{ background: "hsl(var(--background))" }}>
+      <main
+        className="min-h-screen"
+        style={{ background: "hsl(var(--background))" }}
+      >
         <div className="pt-32 pb-20">
           <div className="container-wide text-center max-w-md mx-auto">
             <motion.div
@@ -65,10 +81,21 @@ const CheckoutPage = () => {
               className="mb-8"
             >
               <p className="text-6xl mb-6">🛒</p>
-              <h1 className="text-3xl font-display font-black text-foreground mb-4">Your cart is empty</h1>
-              <p className="text-muted-foreground mb-8">Add some delicious firewood-grilled items before checking out.</p>
+              <h1 className="text-3xl font-display font-black text-foreground mb-4">
+                Your cart is empty
+              </h1>
+              <p className="text-muted-foreground mb-8">
+                Add some delicious firewood-grilled items before checking out.
+              </p>
               <Link to="/menu">
-                <Button size="lg" className="rounded-full px-8 font-semibold" style={{ background: "hsl(var(--primary))", boxShadow: "0 6px 24px hsl(var(--primary) / 0.4)" }}>
+                <Button
+                  size="lg"
+                  className="rounded-full px-8 font-semibold"
+                  style={{
+                    background: "hsl(var(--primary))",
+                    boxShadow: "0 6px 24px hsl(var(--primary) / 0.4)",
+                  }}
+                >
                   Browse Menu
                 </Button>
               </Link>
@@ -81,22 +108,32 @@ const CheckoutPage = () => {
 
   const handlePlaceOrder = async () => {
     // Validate delivery address
-    if (deliveryType === 'delivery' && (!street || !city || !state)) {
-      toast.error('Please fill in your delivery address');
+    if (deliveryType === "delivery" && (!street || !city || !state)) {
+      toast.error("Please fill in your delivery address");
       return;
     }
 
     // Validate guest fields
     if (!user && (!guestName || !guestEmail || !guestPhone)) {
-      toast.error('Please fill in your contact details');
+      toast.error("Please fill in your contact details");
       return;
     }
+
+    const userId = user?.id;
+
+    const cartId = localStorage.getItem("cartId") || undefined;
+
+    console.log(
+      `[Checkout] Creating order with userId=${userId}, cartId=${cartId}`,
+    );
 
     const orderData: CreateOrderDTO = {
       deliveryType,
       paymentMethod,
       specialInstructions: instructions || undefined,
-      ...(deliveryType === 'delivery' && {
+      userId,
+      cartId,
+      ...(deliveryType === "delivery" && {
         deliveryAddress: { street, city, state, zipCode, country },
       }),
       ...(!user && {
@@ -118,16 +155,21 @@ const CheckoutPage = () => {
       }
 
       clearCart();
-      toast.success('Order placed successfully!');
+      toast.success("Order placed successfully!");
       navigate(`/order/${order.id}/confirmed`);
     } catch (error: any) {
-      const msg = error.response?.data?.message || 'Failed to place order. Please try again.';
+      const msg =
+        error.response?.data?.message ||
+        "Failed to place order. Please try again.";
       toast.error(msg);
     }
   };
 
   return (
-    <main className="min-h-screen" style={{ background: "hsl(var(--background))" }}>
+    <main
+      className="min-h-screen"
+      style={{ background: "hsl(var(--background))" }}
+    >
       {/* ── HERO SECTION (CINEMATIC) ── */}
       <section
         className="relative pt-40 pb-16 overflow-hidden"
@@ -158,7 +200,10 @@ const CheckoutPage = () => {
             animate={{ opacity: 1, y: 0 }}
             className="flex items-center gap-4 mb-6"
           >
-            <ShoppingBag className="w-8 h-8" style={{ color: "hsl(var(--primary))" }} />
+            <ShoppingBag
+              className="w-8 h-8"
+              style={{ color: "hsl(var(--primary))" }}
+            />
             <h1
               className="font-display font-black text-white leading-tight"
               style={{
@@ -194,46 +239,57 @@ const CheckoutPage = () => {
                 className="bg-card rounded-2xl p-7 border border-border shadow-[var(--shadow-card)]"
               >
                 <h2 className="font-display text-lg font-semibold text-foreground mb-5 flex items-center gap-2">
-                  <MapPin className="w-5 h-5" style={{ color: "hsl(var(--primary))" }} />
+                  <MapPin
+                    className="w-5 h-5"
+                    style={{ color: "hsl(var(--primary))" }}
+                  />
                   Delivery Method
                 </h2>
                 <RadioGroup
                   value={deliveryType}
-                  onValueChange={(v) => setDeliveryType(v as 'delivery' | 'collection')}
+                  onValueChange={(v) =>
+                    setDeliveryType(v as "delivery" | "collection")
+                  }
                   className="flex gap-4"
                 >
                   <motion.label
                     whileHover={{ y: -2 }}
                     className={`flex-1 flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all duration-300 ${
-                      deliveryType === 'delivery'
-                        ? 'border-primary bg-primary/5'
-                        : 'border-border hover:border-primary/30'
+                      deliveryType === "delivery"
+                        ? "border-primary bg-primary/5"
+                        : "border-border hover:border-primary/30"
                     }`}
                   >
                     <RadioGroupItem value="delivery" />
                     <div>
                       <p className="font-semibold text-foreground">Delivery</p>
-                      <p className="text-sm text-muted-foreground">To your address</p>
+                      <p className="text-sm text-muted-foreground">
+                        To your address
+                      </p>
                     </div>
                   </motion.label>
                   <motion.label
                     whileHover={{ y: -2 }}
                     className={`flex-1 flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all duration-300 ${
-                      deliveryType === 'collection'
-                        ? 'border-primary bg-primary/5'
-                        : 'border-border hover:border-primary/30'
+                      deliveryType === "collection"
+                        ? "border-primary bg-primary/5"
+                        : "border-border hover:border-primary/30"
                     }`}
                   >
                     <RadioGroupItem value="collection" />
                     <div>
-                      <p className="font-semibold text-foreground">Collection</p>
-                      <p className="text-sm text-muted-foreground">Pick up at store</p>
+                      <p className="font-semibold text-foreground">
+                        Collection
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Pick up at store
+                      </p>
                     </div>
                   </motion.label>
                 </RadioGroup>
 
                 <AnimatePresence mode="wait">
-                  {deliveryType === 'delivery' ? (
+                  {deliveryType === "delivery" ? (
                     <motion.div
                       key="delivery"
                       initial={{ opacity: 0, y: 12 }}
@@ -324,10 +380,17 @@ const CheckoutPage = () => {
                       }}
                     >
                       <div className="flex items-start gap-3">
-                        <Store className="w-5 h-5 mt-1" style={{ color: "hsl(var(--primary))" }} />
+                        <Store
+                          className="w-5 h-5 mt-1"
+                          style={{ color: "hsl(var(--primary))" }}
+                        />
                         <div>
-                          <p className="font-semibold text-foreground text-sm">📍 Pickup Location</p>
-                          <p className="text-sm text-muted-foreground mt-1">{STORE_ADDRESS}</p>
+                          <p className="font-semibold text-foreground text-sm">
+                            📍 Pickup Location
+                          </p>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {STORE_ADDRESS}
+                          </p>
                         </div>
                       </div>
                     </motion.div>
@@ -343,16 +406,27 @@ const CheckoutPage = () => {
                   transition={{ delay: 0.15 }}
                   className="bg-card rounded-2xl p-7 border border-border shadow-[var(--shadow-card)]"
                 >
-                  <h2 className="font-display text-lg font-semibold text-foreground mb-4">Your Details</h2>
+                  <h2 className="font-display text-lg font-semibold text-foreground mb-4">
+                    Your Details
+                  </h2>
                   <p className="text-sm text-muted-foreground mb-5">
-                    Have an account?{' '}
-                    <Link to="/login?redirect=/checkout" className="font-semibold" style={{ color: "hsl(var(--primary))" }}>
+                    Have an account?{" "}
+                    <Link
+                      to="/login?redirect=/checkout"
+                      className="font-semibold"
+                      style={{ color: "hsl(var(--primary))" }}
+                    >
                       Sign in
-                    </Link>{' '}
+                    </Link>{" "}
                     for faster checkout.
                   </p>
                   <div className="space-y-4">
-                    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="space-y-2.5">
+                    <motion.div
+                      initial={{ opacity: 0, y: 12 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.2 }}
+                      className="space-y-2.5"
+                    >
                       <Label className="font-semibold">Full Name</Label>
                       <Input
                         value={guestName}
@@ -366,7 +440,12 @@ const CheckoutPage = () => {
                       />
                     </motion.div>
                     <div className="grid sm:grid-cols-2 gap-4">
-                      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="space-y-2.5">
+                      <motion.div
+                        initial={{ opacity: 0, y: 12 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.25 }}
+                        className="space-y-2.5"
+                      >
                         <Label className="font-semibold">Email</Label>
                         <Input
                           type="email"
@@ -380,7 +459,12 @@ const CheckoutPage = () => {
                           }}
                         />
                       </motion.div>
-                      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="space-y-2.5">
+                      <motion.div
+                        initial={{ opacity: 0, y: 12 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.3 }}
+                        className="space-y-2.5"
+                      >
                         <Label className="font-semibold">Phone</Label>
                         <Input
                           type="tel"
@@ -407,7 +491,10 @@ const CheckoutPage = () => {
                 className="bg-card rounded-2xl p-7 border border-border shadow-[var(--shadow-card)]"
               >
                 <h2 className="font-display text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
-                  <FileText className="w-5 h-5" style={{ color: "hsl(var(--primary))" }} />
+                  <FileText
+                    className="w-5 h-5"
+                    style={{ color: "hsl(var(--primary))" }}
+                  />
                   Special Instructions
                 </h2>
                 <Textarea
@@ -422,7 +509,9 @@ const CheckoutPage = () => {
                     border: "1px solid hsl(var(--border))",
                   }}
                 />
-                <p className="text-xs text-muted-foreground mt-2 text-right">{instructions.length}/500</p>
+                <p className="text-xs text-muted-foreground mt-2 text-right">
+                  {instructions.length}/500
+                </p>
               </motion.section>
 
               {/* Payment */}
@@ -433,11 +522,20 @@ const CheckoutPage = () => {
                 className="bg-card rounded-2xl p-7 border border-border shadow-[var(--shadow-card)]"
               >
                 <h2 className="font-display text-lg font-semibold text-foreground mb-5 flex items-center gap-2">
-                  <CreditCard className="w-5 h-5" style={{ color: "hsl(var(--primary))" }} />
+                  <CreditCard
+                    className="w-5 h-5"
+                    style={{ color: "hsl(var(--primary))" }}
+                  />
                   Payment Method
                 </h2>
-                <RadioGroup value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as 'cash' | 'stripe')} className="space-y-3">
-                  {(['cash', 'stripe'] as const).map((m, i) => (
+                <RadioGroup
+                  value={paymentMethod}
+                  onValueChange={(v) =>
+                    setPaymentMethod(v as "cash" | "stripe")
+                  }
+                  className="space-y-3"
+                >
+                  {(["cash", "stripe"] as const).map((m, i) => (
                     <motion.label
                       key={m}
                       initial={{ opacity: 0, y: 12 }}
@@ -445,11 +543,15 @@ const CheckoutPage = () => {
                       transition={{ delay: 0.3 + i * 0.05 }}
                       whileHover={{ y: -2 }}
                       className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all duration-300 ${
-                        paymentMethod === m ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/30'
+                        paymentMethod === m
+                          ? "border-primary bg-primary/5"
+                          : "border-border hover:border-primary/30"
                       }`}
                     >
                       <RadioGroupItem value={m} />
-                      <span className="font-semibold text-foreground capitalize">{m === 'stripe' ? 'Card Payment' : 'Cash on Delivery'}</span>
+                      <span className="font-semibold text-foreground capitalize">
+                        {m === "stripe" ? "Card Payment" : "Cash on Delivery"}
+                      </span>
                     </motion.label>
                   ))}
                 </RadioGroup>
@@ -476,8 +578,13 @@ const CheckoutPage = () => {
                   onClick={() => setShowSummary(!showSummary)}
                   className="flex items-center justify-between w-full mb-5"
                 >
-                  <h2 className="font-display text-lg font-semibold text-foreground">Order Summary</h2>
-                  <motion.div animate={{ rotate: showSummary ? 180 : 0 }} transition={{ duration: 0.3 }}>
+                  <h2 className="font-display text-lg font-semibold text-foreground">
+                    Order Summary
+                  </h2>
+                  <motion.div
+                    animate={{ rotate: showSummary ? 180 : 0 }}
+                    transition={{ duration: 0.3 }}
+                  >
                     <ChevronDown className="w-5 h-5 text-muted-foreground" />
                   </motion.div>
                 </motion.button>
@@ -499,8 +606,12 @@ const CheckoutPage = () => {
                           transition={{ delay: i * 0.05 }}
                           className="flex justify-between text-sm"
                         >
-                          <span className="text-muted-foreground">{item.quantity}× {item.name}</span>
-                          <span className="font-semibold text-foreground">{formatPrice(item.itemTotal)}</span>
+                          <span className="text-muted-foreground">
+                            {item.quantity}× {item.name}
+                          </span>
+                          <span className="font-semibold text-foreground">
+                            {formatPrice(item.itemTotal)}
+                          </span>
                         </motion.div>
                       ))}
                     </motion.div>
@@ -511,12 +622,16 @@ const CheckoutPage = () => {
                 <div className="space-y-3 mb-5">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Subtotal</span>
-                    <span className="text-foreground font-medium">{formatPrice(subtotal)}</span>
+                    <span className="text-foreground font-medium">
+                      {formatPrice(subtotal)}
+                    </span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Delivery</span>
                     <span className="text-foreground font-medium">
-                      {deliveryType === 'collection' ? 'Free' : formatPrice(deliveryFee)}
+                      {deliveryType === "collection"
+                        ? "Free"
+                        : formatPrice(deliveryFee)}
                     </span>
                   </div>
                   {discount > 0 && (
@@ -526,7 +641,10 @@ const CheckoutPage = () => {
                       className="flex justify-between text-sm"
                     >
                       <span className="text-muted-foreground">Discount</span>
-                      <span style={{ color: "#10b981" }} className="font-medium">
+                      <span
+                        style={{ color: "#10b981" }}
+                        className="font-medium"
+                      >
                         -{formatPrice(discount)}
                       </span>
                     </motion.div>
@@ -537,8 +655,13 @@ const CheckoutPage = () => {
 
                 {/* Total */}
                 <div className="flex justify-between mb-7">
-                  <span className="text-foreground font-display font-bold">Total</span>
-                  <span className="font-display font-black text-xl" style={{ color: "hsl(var(--primary))" }}>
+                  <span className="text-foreground font-display font-bold">
+                    Total
+                  </span>
+                  <span
+                    className="font-display font-black text-xl"
+                    style={{ color: "hsl(var(--primary))" }}
+                  >
                     {formatPrice(total)}
                   </span>
                 </div>
@@ -550,8 +673,12 @@ const CheckoutPage = () => {
                     disabled={createOrderMutation.isPending}
                     className="w-full rounded-xl h-12 font-semibold gap-2"
                     style={{
-                      background: createOrderMutation.isPending ? "hsl(var(--muted))" : "hsl(var(--primary))",
-                      boxShadow: createOrderMutation.isPending ? "none" : "0 6px 24px hsl(var(--primary) / 0.4)",
+                      background: createOrderMutation.isPending
+                        ? "hsl(var(--muted))"
+                        : "hsl(var(--primary))",
+                      boxShadow: createOrderMutation.isPending
+                        ? "none"
+                        : "0 6px 24px hsl(var(--primary) / 0.4)",
                     }}
                   >
                     {createOrderMutation.isPending ? (
@@ -570,12 +697,20 @@ const CheckoutPage = () => {
 
                 {/* Terms */}
                 <p className="text-xs text-muted-foreground text-center mt-4">
-                  By placing your order you agree to our{' '}
-                  <Link to="/terms" className="underline hover:no-underline" style={{ color: "hsl(var(--primary))" }}>
+                  By placing your order you agree to our{" "}
+                  <Link
+                    to="/terms"
+                    className="underline hover:no-underline"
+                    style={{ color: "hsl(var(--primary))" }}
+                  >
                     Terms
-                  </Link>{' '}
-                  &{' '}
-                  <Link to="/privacy-policy" className="underline hover:no-underline" style={{ color: "hsl(var(--primary))" }}>
+                  </Link>{" "}
+                  &{" "}
+                  <Link
+                    to="/privacy-policy"
+                    className="underline hover:no-underline"
+                    style={{ color: "hsl(var(--primary))" }}
+                  >
                     Privacy
                   </Link>
                 </p>

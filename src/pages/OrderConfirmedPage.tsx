@@ -10,7 +10,7 @@ const OrderConfirmedPage = () => {
   const { data: order, isLoading } = useOrder(id || '');
 
   return (
-    <main className="pt-20 section-padding">
+    <main className="pt-20 md:pt-40 section-padding">
       <div className="container-wide max-w-lg mx-auto text-center">
         <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 200 }}>
           <CheckCircle2 className="w-20 h-20 text-green-500 mx-auto mb-6" />

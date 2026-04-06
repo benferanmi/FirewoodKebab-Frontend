@@ -26,6 +26,7 @@ const Navbar = () => {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated());
 
   const fetchSettings = useSettingsStore((s) => s.fetch);
+  const loadDeliverySettings = useCartStore((s) => s.loadDeliverySettings);
 
   const [cartSyncing, setCartSyncing] = useState(false);
 
@@ -37,6 +38,7 @@ const Navbar = () => {
   // Fetch global settings once on mount
   useEffect(() => {
     fetchSettings();
+    loadDeliverySettings();
   }, []);
 
   // Sync cart when auth state changes

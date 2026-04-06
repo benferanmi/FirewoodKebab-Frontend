@@ -65,7 +65,7 @@ export interface Cart {
 }
 
 export interface Order {
-  id: string;
+  _id: string;
   orderNumber: string;
   userId?: string;
   guestEmail?: string;

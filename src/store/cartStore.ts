@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { CartItem, Coupon, Address } from "@/types";
 import { cartAPI } from "@/services/api/cart";
+import { settingsAPI } from "@/services/api/settings";
 import { useAuthStore } from "@/store/authStore";
 import { toast } from "sonner";
 
@@ -11,6 +12,9 @@ interface CartStore {
   deliveryType: "delivery" | "collection";
   deliveryAddress: Address | null;
   isCartOpen: boolean;
+  deliveryFee: number | null;
+  deliverySettingsLoaded: boolean;
+  cartId: string | null;  
 
   addItem: (item: Omit<CartItem, "id" | "itemTotal">) => Promise<void>;
   updateQuantity: (id: string, quantity: number) => Promise<void>;
@@ -24,8 +28,10 @@ interface CartStore {
   setCartOpen: (open: boolean) => void;
 
   // SYNC METHODS
-  syncFromServer: () => Promise<void>; // Called on login
-  migrateGuestCart: (mergedCart: any) => void; // Called by authStore after backend migration
+  syncFromServer: () => Promise<void>;
+  migrateGuestCart: (mergedCart: any) => void;
+  loadDeliverySettings: () => Promise<void>;
+  setCartId: (cartId: string | null) => void; 
 
   // GETTERS
   getSubtotal: () => number;
@@ -45,10 +51,12 @@ export const useCartStore = create<CartStore>()(
       deliveryType: "delivery",
       deliveryAddress: null,
       isCartOpen: false,
+      deliveryFee: null,
+      deliverySettingsLoaded: false,
+      cartId: null,  
 
       addItem: async (item) => {
         try {
-          // 1. Optimistic local update
           const items = get().items;
           const existingIndex = items.findIndex(
             (i) =>
@@ -84,9 +92,15 @@ export const useCartStore = create<CartStore>()(
             quantity: item.quantity,
             variants: item.variants,
             notes: item.notes,
+            cartId: !isLoggedIn() ? get().cartId || undefined : undefined, 
           });
 
-          // Server might have returned updated cart, use that as source of truth
+          if (data.data.cartId && !isLoggedIn()) {
+            set({ cartId: data.data.cartId });
+            localStorage.setItem("cartId", data.data.cartId);
+            console.debug(`CartId updated: ${data.data.cartId}`);
+          }
+
           set({
             items: data.data.items || [],
             coupon: data.data.coupon ?? null,
@@ -94,7 +108,6 @@ export const useCartStore = create<CartStore>()(
         } catch (error: any) {
           console.error("Failed to add item:", error);
           toast.error("Failed to add item to cart. Trying again...");
-          // Don't throw - let UI stay responsive
         }
       },
 
@@ -105,7 +118,6 @@ export const useCartStore = create<CartStore>()(
             return;
           }
 
-          // Optimistic update
           set({
             items: get().items.map((item) =>
               item.id === id
@@ -116,8 +128,7 @@ export const useCartStore = create<CartStore>()(
 
           console.debug(`Updated item quantity: ${id} → ${quantity}`);
 
-          // Sync to server
-          const { data } = await cartAPI.updateItem(id, quantity);
+          const { data } = await cartAPI.updateItem(id, quantity, !isLoggedIn() ? get().cartId || undefined : undefined);
           set({
             items: data.data.items || [],
             coupon: data.data.coupon ?? null,
@@ -130,13 +141,11 @@ export const useCartStore = create<CartStore>()(
 
       removeItem: async (id) => {
         try {
-          // Optimistic update
           set({ items: get().items.filter((i) => i.id !== id) });
 
           console.debug(`Removed item: ${id}`);
 
-          // Sync to server
-          const { data } = await cartAPI.removeItem(id);
+          const { data } = await cartAPI.removeItem(id, !isLoggedIn() ? get().cartId || undefined : undefined);
           set({
             items: data.data.items || [],
             coupon: data.data.coupon ?? null,
@@ -164,7 +173,7 @@ export const useCartStore = create<CartStore>()(
 
       applyCoupon: async (code) => {
         try {
-          const { data } = await cartAPI.applyCoupon(code);
+          const { data } = await cartAPI.applyCoupon(code, !isLoggedIn() ? get().cartId || undefined : undefined);
           set({ coupon: data.data.coupon, items: data.data.items });
           toast.success("Coupon applied!");
 
@@ -181,7 +190,7 @@ export const useCartStore = create<CartStore>()(
           set({ coupon: null });
 
           if (isLoggedIn()) {
-            const { data } = await cartAPI.removeCoupon();
+            const { data } = await cartAPI.removeCoupon(!isLoggedIn() ? get().cartId || undefined : undefined);
             set({ items: data.data.items || [] });
           }
 
@@ -196,6 +205,7 @@ export const useCartStore = create<CartStore>()(
       setDeliveryType: (deliveryType) => set({ deliveryType }),
       setDeliveryAddress: (deliveryAddress) => set({ deliveryAddress }),
       setCartOpen: (isCartOpen) => set({ isCartOpen }),
+      setCartId: (cartId) => set({ cartId }),  
 
       syncFromServer: async () => {
         if (!isLoggedIn()) return;
@@ -205,6 +215,7 @@ export const useCartStore = create<CartStore>()(
           set({
             items: data.data.items ?? [],
             coupon: data.data.coupon ?? null,
+            cartId: null,  
           });
 
           console.info(
@@ -221,6 +232,7 @@ export const useCartStore = create<CartStore>()(
           set({
             items: mergedCart.items || [],
             coupon: mergedCart.coupon || null,
+            cartId: null, 
           });
 
           console.info(
@@ -231,10 +243,32 @@ export const useCartStore = create<CartStore>()(
         }
       },
 
+      loadDeliverySettings: async () => {
+        try {
+          const { data } = await settingsAPI.getDeliverySettings();
+          const flatFee = data.data.flatFee || 0;
+
+          set({
+            deliveryFee: flatFee,
+            deliverySettingsLoaded: true,
+          });
+
+        } catch (error: any) {
+          console.error("Failed to load delivery settings:", error);
+          set({
+            deliveryFee: 500,
+            deliverySettingsLoaded: true,
+          });
+        }
+      },
+
       getSubtotal: () =>
         get().items.reduce((sum, item) => sum + item.itemTotal, 0),
 
-      getDeliveryFee: () => (get().deliveryType === "delivery" ? 500 : 0),
+      getDeliveryFee: () => {
+        if (get().deliveryType === "collection") return 0;
+        return get().deliveryFee ?? 0;
+      },
 
       getDiscount: () => {
         const coupon = get().coupon;
@@ -257,6 +291,7 @@ export const useCartStore = create<CartStore>()(
         items: state.items,
         coupon: state.coupon,
         deliveryType: state.deliveryType,
+        cartId: state.cartId,  
       }),
     },
   ),

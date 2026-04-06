@@ -13,6 +13,7 @@ import { toast } from "sonner";
 const RegisterPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [termsChecked, setTermsChecked] = useState(false);
   const navigate = useNavigate();
   const { register: registerUser, isLoading } = useAuthStore();
 
@@ -351,25 +352,37 @@ const RegisterPage = () => {
                 <input
                   {...register("terms")}
                   type="checkbox"
-                  className="w-4 h-4 rounded opacity-0 cursor-pointer"
+                  checked={termsChecked}
+                  onChange={(e) => setTermsChecked(e.target.checked)}
+                  className="w-4 h-4 rounded opacity-0 cursor-pointer absolute inset-0"
                 />
                 <div
-                  className="absolute inset-0 rounded border transition-all duration-300"
+                  className="w-4 h-4 rounded border transition-all duration-300 flex items-center justify-center"
                   style={{
-                    borderColor: "rgba(255,255,255,0.2)",
+                    borderColor: termsChecked
+                      ? "hsl(var(--primary))"
+                      : "rgba(255,255,255,0.2)",
+                    background: termsChecked
+                      ? "hsl(var(--primary) / 0.2)"
+                      : "transparent",
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor =
-                      "hsl(var(--primary) / 0.6)";
-                    e.currentTarget.style.background =
-                      "hsl(var(--primary) / 0.1)";
+                    if (!termsChecked) {
+                      e.currentTarget.style.borderColor =
+                        "hsl(var(--primary) / 0.6)";
+                      e.currentTarget.style.background =
+                        "hsl(var(--primary) / 0.1)";
+                    }
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = "rgba(255,255,255,0.2)";
-                    e.currentTarget.style.background = "transparent";
+                    if (!termsChecked) {
+                      e.currentTarget.style.borderColor =
+                        "rgba(255,255,255,0.2)";
+                      e.currentTarget.style.background = "transparent";
+                    }
                   }}
                 >
-                  <Check className="w-3 h-3 text-primary opacity-0 absolute top-0.5 left-0.5" />
+                  {termsChecked && <Check className="w-3 h-3 text-primary" />}
                 </div>
               </div>
               <span style={{ color: "rgba(255,255,255,0.6)" }}>

@@ -1,48 +1,101 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { toast } from 'sonner';
 
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 
+                   import.meta.env.VITE_API_URL || 
+                   'http://localhost:5000';
 
 let socket: Socket | null = null;
 
-function getSocket(): Socket {
-  if (!socket) {
+export function useSocketInit(token: string | null) {
+  useEffect(() => {
+    if (!token || socket?.connected) return;
+
     socket = io(SOCKET_URL, {
-      auth: { token: localStorage.getItem('accessToken') },
+      auth: { token },  
       reconnection: true,
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
-      autoConnect: false,
+      autoConnect: true, 
     });
-  }
-  return socket;
+
+    socket.on('connect', () => {
+      console.log('[Socket] Connected');
+    });
+
+    socket.on('connect_error', (error) => {
+      console.error('[Socket] Connection error:', error);
+      toast.error('Connection lost. Retrying...');
+    });
+
+    socket.on('error', (error) => {
+      console.error('[Socket] Error:', error);
+    });
+
+    return () => {
+      // Don't disconnect - keep connection alive across page navigations
+      // Only disconnect on logout
+    };
+  }, [token]);
 }
 
 export function useOrderSocket(
   orderId: string | undefined,
   onStatusChange: (data: { status: string; estimatedTime?: number }) => void
 ) {
+  const activeRoomRef = useRef<string | null>(null);
+
   useEffect(() => {
-    if (!orderId) return;
+    if (!orderId || !socket?.connected) return;
 
-    const s = getSocket();
-    s.connect();
-    s.emit('order:track', { orderId });
+    // Join tracking room
+    const roomId = `order-${orderId}`;
+    socket.emit('order:track', orderId);  
+    activeRoomRef.current = roomId;
 
-    const handlers: Record<string, (data: any) => void> = {
-      'order:confirmed': (data) => { onStatusChange({ ...data, status: 'confirmed' }); toast.success('Order confirmed!'); },
-      'order:preparing': (data) => { onStatusChange({ ...data, status: 'preparing' }); toast.info('Your order is being prepared'); },
-      'order:on_the_way': (data) => { onStatusChange({ ...data, status: 'out_for_delivery' }); toast.info(`Order on the way! ETA: ${data.estimatedTime} minutes`); },
-      'order:delivered': (data) => { onStatusChange({ ...data, status: 'delivered' }); toast.success('Order delivered! 🎉'); },
+    const handleOrderUpdate = (data: any) => {
+      console.log('[Socket] Order update:', data);
+      
+      onStatusChange({
+        status: data.status,
+        estimatedTime: data.estimatedTime,
+      });
+
+      const toastMessages: Record<string, string> = {
+        confirmed: '✅ Order confirmed!',
+        preparing: '👨‍🍳 Your order is being prepared',
+        out_for_delivery: `🚗 On the way! ETA: ${data.estimatedTime} mins`,
+        delivered: '🎉 Order delivered!',
+        cancelled: '❌ Order cancelled',
+      };
+
+      if (toastMessages[data.status]) {
+        toast.success(toastMessages[data.status]);
+      }
     };
 
-    Object.entries(handlers).forEach(([event, handler]) => s.on(event, handler));
+    socket.on('order:update', handleOrderUpdate);
+    socket.on(`order:${orderId}:update`, handleOrderUpdate);
 
     return () => {
-      Object.keys(handlers).forEach((event) => s.off(event));
-      s.emit('order:disconnect');
-      s.disconnect();
+      socket?.off('order:update', handleOrderUpdate);
+      socket?.off(`order:${orderId}:update`, handleOrderUpdate);
+      // Leave room if available
+      if (activeRoomRef.current) {
+        socket?.emit('order:untrack', orderId);
+      }
     };
-  }, [orderId]);
+  }, [orderId, onStatusChange]);
+}
+
+export function getSocket(): Socket | null {
+  return socket;
+}
+
+export function disconnectSocket() {
+  if (socket?.connected) {
+    socket.disconnect();
+    socket = null;
+  }
 }

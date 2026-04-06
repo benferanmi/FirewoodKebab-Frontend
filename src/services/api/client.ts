@@ -8,18 +8,19 @@ const client = axios.create({
   headers: { "Content-Type": "application/json" },
 });
 
-// ── Request: attach access token ──────────────────────────────────────────────
+// ── Request: attach access token AND cartId ──────────────────────────────────
 client.interceptors.request.use((config) => {
-  // Check if user is authenticated
-  const isAuthenticated = !!localStorage.getItem("accessToken");
-
-  // If not authenticated, check for guest cartId
-  if (!isAuthenticated) {
+  // ✅ ADD AUTHORIZATION HEADER FOR AUTHENTICATED USERS
+  const accessToken = localStorage.getItem("accessToken");
+  if (accessToken) {
+    config.headers.Authorization = `Bearer ${accessToken}`;
+    console.debug(`[API] Authorization header added`);
+  } else {
+    // ✅ FOR GUESTS: Add cartId to header
     const cartId = localStorage.getItem("cartId");
     if (cartId) {
-      // Add cartId to request header
       config.headers["X-Cart-ID"] = cartId;
-      console.debug(`[API] Request header X-Cart-ID: ${cartId}`);
+      console.debug(`[API] Request X-Cart-ID header: ${cartId}`);
     }
   }
 
@@ -38,15 +39,15 @@ const processQueue = (error: unknown, token: string | null = null) => {
   failedQueue = [];
 };
 
-// ── Response: handle token errors ─────────────────────────────────────────────
+// ── Response: handle token errors & capture cartId ──────────────────────────
 client.interceptors.response.use(
   (response) => {
+    // ✅ CAPTURE CARTID FROM RESPONSE HEADER (for guests)
     const cartId = response.headers["x-cart-id"];
-    if (cartId) {
+    if (cartId && !localStorage.getItem("accessToken")) {
+      // Only save cartId for guests (unauthenticated users)
       localStorage.setItem("cartId", cartId);
-      console.debug(
-        `[API] Response header X-Cart-ID: ${cartId} (saved to localStorage)`,
-      );
+      console.debug(`[API] Saved guest cartId from response: ${cartId}`);
     }
     return response;
   },

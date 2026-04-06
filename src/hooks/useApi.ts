@@ -1,18 +1,27 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { menuAPI } from '@/services/api/menu';
-import { ordersAPI } from '@/services/api/orders';
-import { userAPI } from '@/services/api/user';
-import { cartAPI } from '@/services/api/cart';
-import { paymentAPI } from '@/services/api/payment';
-import { reviewsAPI } from '@/services/api/reviews';
-import { notificationsAPI } from '@/services/api/notifications';
-import { authAPI } from '@/services/api/auth';
-import type { MenuQueryParams, CreateOrderDTO, AddressDTO, CreateReviewDTO, NotificationPrefsDTO, InitPaymentDTO, ResetPasswordDTO } from '@/types';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { menuAPI } from "@/services/api/menu";
+import { ordersAPI } from "@/services/api/orders";
+import { userAPI } from "@/services/api/user";
+import { cartAPI } from "@/services/api/cart";
+import { paymentAPI } from "@/services/api/payment";
+import { reviewsAPI } from "@/services/api/reviews";
+import { notificationsAPI } from "@/services/api/notifications";
+import { authAPI } from "@/services/api/auth";
+import type {
+  MenuQueryParams,
+  CreateOrderDTO,
+  AddressDTO,
+  CreateReviewDTO,
+  NotificationPrefsDTO,
+  InitPaymentDTO,
+  ResetPasswordDTO,
+} from "@/types";
+import { Banner, promotionsAPI } from "@/services/promotion";
 
 // ─── MENU ──────────────────────────────────────────
 export const useCategories = () =>
   useQuery({
-    queryKey: ['categories'],
+    queryKey: ["categories"],
     queryFn: async () => {
       const { data } = await menuAPI.getCategories();
       return data.data;
@@ -22,7 +31,7 @@ export const useCategories = () =>
 
 export const useMenuItems = (params?: MenuQueryParams) =>
   useQuery({
-    queryKey: ['menuItems', params],
+    queryKey: ["menuItems", params],
     queryFn: async () => {
       const { data } = await menuAPI.getItems(params);
       return { items: data.data.data, pagination: data.data.pagination };
@@ -32,7 +41,7 @@ export const useMenuItems = (params?: MenuQueryParams) =>
 
 export const useMenuItem = (id: string) =>
   useQuery({
-    queryKey: ['menuItem', id],
+    queryKey: ["menuItem", id],
     queryFn: async () => {
       const { data } = await menuAPI.getItemById(id);
       return data.data.item;
@@ -43,7 +52,7 @@ export const useMenuItem = (id: string) =>
 // ─── CART (server-synced) ──────────────────────────
 export const useServerCart = () =>
   useQuery({
-    queryKey: ['cart'],
+    queryKey: ["cart"],
     queryFn: async () => {
       const { data } = await cartAPI.getCart();
       return data.data;
@@ -55,7 +64,7 @@ export const useAddCartItem = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: cartAPI.addItem,
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['cart'] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["cart"] }),
   });
 };
 
@@ -63,7 +72,7 @@ export const useApplyCoupon = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (code: string) => cartAPI.applyCoupon(code),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['cart'] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["cart"] }),
   });
 };
 
@@ -71,7 +80,7 @@ export const useRemoveCoupon = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: () => cartAPI.removeCoupon(),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['cart'] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["cart"] }),
   });
 };
 
@@ -83,7 +92,7 @@ export const useCreateOrder = () =>
 
 export const useOrder = (id: string) =>
   useQuery({
-    queryKey: ['order', id],
+    queryKey: ["order", id],
     queryFn: async () => {
       const { data } = await ordersAPI.getById(id);
       return data.data.order;
@@ -93,7 +102,8 @@ export const useOrder = (id: string) =>
 
 export const useOrderTracking = (id: string) =>
   useQuery({
-    queryKey: ['orderTracking', id],
+    queryKey: ["orderTracking", id],
+
     queryFn: async () => {
       const { data } = await ordersAPI.track(id);
       return data.data;
@@ -102,9 +112,13 @@ export const useOrderTracking = (id: string) =>
     refetchInterval: 15000, // poll every 15s
   });
 
-export const useUserOrders = (params?: { page?: number; limit?: number; status?: string }) =>
+export const useUserOrders = (params?: {
+  page?: number;
+  limit?: number;
+  status?: string;
+}) =>
   useQuery({
-    queryKey: ['userOrders', params],
+    queryKey: ["userOrders", params],
     queryFn: async () => {
       const { data } = await ordersAPI.getUserOrders(params);
       console.log("Fetched user orders:", data);
@@ -115,8 +129,9 @@ export const useUserOrders = (params?: { page?: number; limit?: number; status?:
 export const useCancelOrder = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, reason }: { id: string; reason: string }) => ordersAPI.cancel(id, reason),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['userOrders'] }),
+    mutationFn: ({ id, reason }: { id: string; reason: string }) =>
+      ordersAPI.cancel(id, reason),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["userOrders"] }),
   });
 };
 
@@ -134,7 +149,7 @@ export const useVerifyPayment = () =>
 // ─── USER / PROFILE ───────────────────────────────
 export const useProfile = () =>
   useQuery({
-    queryKey: ['profile'],
+    queryKey: ["profile"],
     queryFn: async () => {
       const { data } = await userAPI.getProfile();
       return data.data.user;
@@ -146,13 +161,13 @@ export const useUpdateProfile = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: userAPI.updateProfile,
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['profile'] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["profile"] }),
   });
 };
 
 export const useAddresses = () =>
   useQuery({
-    queryKey: ['addresses'],
+    queryKey: ["addresses"],
     queryFn: async () => {
       const { data } = await userAPI.getAddresses();
       return data.data;
@@ -163,15 +178,16 @@ export const useAddAddress = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (data: AddressDTO) => userAPI.addAddress(data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['addresses'] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["addresses"] }),
   });
 };
 
 export const useUpdateAddress = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: AddressDTO }) => userAPI.updateAddress(id, data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['addresses'] }),
+    mutationFn: ({ id, data }: { id: string; data: AddressDTO }) =>
+      userAPI.updateAddress(id, data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["addresses"] }),
   });
 };
 
@@ -179,7 +195,7 @@ export const useDeleteAddress = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => userAPI.deleteAddress(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['addresses'] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["addresses"] }),
   });
 };
 
@@ -187,7 +203,7 @@ export const useSetDefaultAddress = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => userAPI.setDefaultAddress(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['addresses'] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["addresses"] }),
   });
 };
 
@@ -201,13 +217,16 @@ export const useCreateReview = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (data: CreateReviewDTO) => reviewsAPI.create(data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['userOrders'] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["userOrders"] }),
   });
 };
 
-export const useItemReviews = (itemId: string, params?: { page?: number; limit?: number; sort?: string }) =>
+export const useItemReviews = (
+  itemId: string,
+  params?: { page?: number; limit?: number; sort?: string },
+) =>
   useQuery({
-    queryKey: ['itemReviews', itemId, params],
+    queryKey: ["itemReviews", itemId, params],
     queryFn: async () => {
       const { data } = await reviewsAPI.getByItem(itemId, params);
       return { reviews: data.data.reviews, pagination: data.pagination };
@@ -217,21 +236,46 @@ export const useItemReviews = (itemId: string, params?: { page?: number; limit?:
 
 export const useOrderReviews = (orderId: string) =>
   useQuery({
-    queryKey: ['orderReviews', orderId],
+    queryKey: ["orderReviews", orderId],
     queryFn: async () => {
       const { data } = await reviewsAPI.getByOrder(orderId);
-      return data.data.reviews;
+      return data.data;
     },
     enabled: !!orderId,
   });
 
+export const useUpdateReview = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: { rating?: number; comment?: string };
+    }) => reviewsAPI.update(id, data),
+    onSuccess: (_data, variables) => {
+      qc.invalidateQueries({ queryKey: ["userOrders"] });
+      // Invalidate the specific order's reviews so the badge re-fetches
+      qc.invalidateQueries({ queryKey: ["orderReviews"] });
+    },
+  });
+};
+
 // ─── NOTIFICATIONS ────────────────────────────────
-export const useNotifications = (params?: { page?: number; limit?: number; unreadOnly?: boolean }) =>
+export const useNotifications = (params?: {
+  page?: number;
+  limit?: number;
+  unreadOnly?: boolean;
+}) =>
   useQuery({
-    queryKey: ['notifications', params],
+    queryKey: ["notifications", params],
     queryFn: async () => {
       const { data } = await notificationsAPI.getAll(params);
-      return { notifications: data.data.notifications, pagination: data.pagination };
+      return {
+        notifications: data.data.notifications,
+        pagination: data.pagination,
+      };
     },
   });
 
@@ -239,13 +283,14 @@ export const useMarkAllRead = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: () => notificationsAPI.markAllRead(),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['notifications'] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["notifications"] }),
   });
 };
 
 export const useUpdateNotificationPrefs = () =>
   useMutation({
-    mutationFn: (prefs: NotificationPrefsDTO) => notificationsAPI.updatePreferences(prefs),
+    mutationFn: (prefs: NotificationPrefsDTO) =>
+      notificationsAPI.updatePreferences(prefs),
   });
 
 // ─── AUTH (non-store, for one-off actions) ────────
@@ -257,4 +302,21 @@ export const useResetPassword = () =>
 export const useForgotPassword = () =>
   useMutation({
     mutationFn: (email: string) => authAPI.forgotPassword(email),
+  });
+
+  export const useBanners = () =>
+  useQuery<Banner[]>({
+    queryKey: ["banners"],
+    queryFn: () => promotionsAPI.getBanners(),
+    staleTime: 5 * 60 * 1000, // 5 min — banners don't change frequently
+  });
+ 
+
+export const useValidateCoupon = (code: string) =>
+  useQuery({
+    queryKey: ["coupon", "validate", code.toUpperCase()],
+    queryFn: () => promotionsAPI.validateCoupon(code),
+    enabled: false, // manual trigger via refetch()
+    retry: false,
+    staleTime: 60 * 1000, // 1 min
   });

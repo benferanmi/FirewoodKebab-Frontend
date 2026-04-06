@@ -24,7 +24,6 @@ import { useCartStore } from "@/store/cartStore";
 import {
   useProfile,
   useUpdateProfile,
-  useUserOrders,
   useAddresses,
   useAddAddress,
   useDeleteAddress,
@@ -32,12 +31,13 @@ import {
   useNotifications,
   useMarkAllRead,
   useUpdateNotificationPrefs,
-  useCreateReview,
   useDeleteAccount,
 } from "@/hooks/useApi";
 import { formatPrice } from "@/utils/helpers";
 import { toast } from "sonner";
 import type { Order, Address, Notification } from "@/types";
+import OrdersTab from "@/components/account/OrdersTab";
+import { disconnectSocket } from "@/hooks/useSocket";
 
 const tabs = [
   { id: "profile", label: "Profile", icon: User },
@@ -55,6 +55,7 @@ const AccountPage = () => {
 
   const handleLogout = () => {
     logout();
+    disconnectSocket();
     toast.success("Logged out successfully");
     navigate("/");
   };
@@ -211,216 +212,6 @@ const ProfileTab = ({ user }: { user: any }) => {
           </Button>
         </div>
       </div>
-    </div>
-  );
-};
-
-/* ─── ORDERS TAB ─── */
-const OrdersTab = () => {
-  const [page, setPage] = useState(1);
-  const [statusFilter, setStatusFilter] = useState("");
-  const { data, isLoading } = useUserOrders({
-    page,
-    limit: 10,
-    status: statusFilter || undefined,
-  });
-  console.log(data);
-  const createReview = useCreateReview();
-  const addItem = useCartStore((s) => s.addItem);
-
-  const [reviewingOrder, setReviewingOrder] = useState<string | null>(null);
-  const [rating, setRating] = useState(5);
-  const [comment, setComment] = useState("");
-
-  const handleReview = async (orderId: string) => {
-    try {
-      await createReview.mutateAsync({ orderId, rating, comment });
-      toast.success("Review submitted!");
-      setReviewingOrder(null);
-      setComment("");
-    } catch {
-      toast.error("Failed to submit review");
-    }
-  };
-
-  const handleReorder = (order: Order) => {
-    order.items.forEach((item) => {
-      addItem({
-        menuItemId: item.menuItemId,
-        name: item.menuItemName,
-        quantity: item.quantity,
-        price: item.price,
-      });
-    });
-    toast.success("Items added to cart!");
-  };
-
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-display font-bold text-foreground">
-          Order History
-        </h2>
-        <select
-          value={statusFilter}
-          onChange={(e) => {
-            setStatusFilter(e.target.value);
-            setPage(1);
-          }}
-          className="text-sm border border-border rounded-lg px-3 py-2 bg-background text-foreground"
-        >
-          <option value="">All Orders</option>
-          <option value="pending">Pending</option>
-          <option value="confirmed">Confirmed</option>
-          <option value="preparing">Preparing</option>
-          <option value="delivered">Delivered</option>
-          <option value="cancelled">Cancelled</option>
-        </select>
-      </div>
-
-      {isLoading ? (
-        <div className="flex justify-center py-12">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
-        </div>
-      ) : data?.orders && data.orders.length > 0 ? (
-        <div className="space-y-4">
-          {data.orders.map((order: Order) => (
-            <div key={order.id} className="border border-border rounded-xl p-4">
-              <div className="flex items-center justify-between mb-2">
-                <div>
-                  <p className="font-semibold text-foreground">
-                    {order.orderNumber}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {new Date(order.createdAt).toLocaleDateString()}
-                  </p>
-                </div>
-                <span
-                  className={`px-3 py-1 rounded-full text-xs font-medium ${
-                    order.status === "delivered"
-                      ? "bg-green-100 text-green-700"
-                      : order.status === "cancelled"
-                        ? "bg-destructive/10 text-destructive"
-                        : "bg-primary/10 text-primary"
-                  }`}
-                >
-                  {order.status}
-                </span>
-              </div>
-              <p className="text-sm text-muted-foreground mb-3">
-                {order.items.length} item{order.items.length > 1 ? "s" : ""} ·{" "}
-                {formatPrice(order.total)}
-              </p>
-              <div className="flex gap-2 flex-wrap">
-                {(order.status === "confirmed" ||
-                  order.status === "preparing" ||
-                  order.status === "out_for_delivery") && (
-                  <a href={`/order/${order.id}/track`}>
-                    <Button size="sm" variant="outline">
-                      Track Order
-                    </Button>
-                  </a>
-                )}
-                {order.status === "delivered" && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setReviewingOrder(order.id)}
-                    className="gap-1"
-                  >
-                    <Star className="w-3 h-3" /> Review
-                  </Button>
-                )}
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => handleReorder(order)}
-                  className="gap-1"
-                >
-                  <RotateCcw className="w-3 h-3" /> Reorder
-                </Button>
-              </div>
-
-              {/* Inline Review Form */}
-              {reviewingOrder === order.id && (
-                <div className="mt-4 p-4 bg-secondary/50 rounded-xl space-y-3">
-                  <div className="flex gap-1">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <button key={star} onClick={() => setRating(star)}>
-                        <Star
-                          className={`w-5 h-5 ${star <= rating ? "fill-yellow-500 text-yellow-500" : "text-muted-foreground"}`}
-                        />
-                      </button>
-                    ))}
-                  </div>
-                  <Textarea
-                    value={comment}
-                    onChange={(e) => setComment(e.target.value)}
-                    placeholder="Write your review (min 10 chars)..."
-                    rows={3}
-                  />
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      onClick={() => handleReview(order.id)}
-                      disabled={createReview.isPending || comment.length < 10}
-                    >
-                      {createReview.isPending ? (
-                        <Loader2 className="w-4 h-4 animate-spin mr-1" />
-                      ) : null}{" "}
-                      Submit
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => setReviewingOrder(null)}
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </div>
-          ))}
-
-          {/* Pagination */}
-          {data.pagination && data.pagination.totalPages > 1 && (
-            <div className="flex justify-center gap-2 mt-4">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={!data.pagination.hasPrev}
-                onClick={() => setPage((p) => p - 1)}
-              >
-                Previous
-              </Button>
-              <span className="text-sm text-muted-foreground flex items-center px-3">
-                Page {data.pagination.page} of {data.pagination.totalPages}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={!data.pagination.hasNext}
-                onClick={() => setPage((p) => p + 1)}
-              >
-                Next
-              </Button>
-            </div>
-          )}
-        </div>
-      ) : (
-        <div className="text-center py-12">
-          <Package className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
-          <p className="text-muted-foreground">
-            No orders yet. Start ordering from our menu!
-          </p>
-          <a href="/menu">
-            <Button variant="outline" className="mt-4">
-              Browse Menu
-            </Button>
-          </a>
-        </div>
-      )}
     </div>
   );
 };

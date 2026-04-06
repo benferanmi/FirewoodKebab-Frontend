@@ -72,7 +72,7 @@ const MenuItemModal = ({ item, onClose }: MenuItemModalProps) => {
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 50, scale: 0.95 }}
         transition={{ duration: 0.3, type: "spring", stiffness: 300, damping: 30 }}
-        className="fixed inset-4 md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-full md:max-w-2xl z-50 bg-gradient-to-br from-slate-900 via-slate-800 to-black rounded-3xl shadow-2xl shadow-orange-500/20 overflow-hidden flex flex-col max-h-[90vh] md:max-h-[95vh] border border-orange-500/20"
+        className="fixed inset-4 md:inset-auto md:top-[5%] md:right-[5%] md:-translate-x-1/2 md:-translate-y-1/2 md:w-full md:max-w-xl z-50 bg-gradient-to-br from-slate-900 via-slate-800 to-black rounded-3xl shadow-2xl shadow-orange-500/20 overflow-hidden flex flex-col max-h-[90vh] md:max-h-[95vh] border border-orange-500/20"
       >
         {/* Image Section with Premium Styling */}
         <div className="relative aspect-[16/9] bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center shrink-0 overflow-hidden group">

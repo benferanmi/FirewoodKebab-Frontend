@@ -23,43 +23,53 @@ import TermsPage from "./pages/TermsPage";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import NotFound from "./pages/NotFound";
 import MenuItemDetailsPage from "./components/menu/MenuItemDetailsPage";
+import { useAuthStore } from "./store/authStore";
+import { useSocketInit } from "./hooks/useSocket";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Navbar />
-        <CartDrawer />
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/menu" element={<MenuPage />} />
-          <Route path="/menu/:itemId" element={<MenuItemDetailsPage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-          <Route
-            path="/reset-password/:token"
-            element={<ResetPasswordPage />}
-          />
-          <Route path="/about" element={<AboutPage />} />
-          <Route path="/contact" element={<ContactPage />} />
-          <Route path="/catering" element={<CateringPage />} />
-          <Route path="/checkout" element={<CheckoutPage />} />
-          <Route path="/order/:id/confirmed" element={<OrderConfirmedPage />} />
-          <Route path="/order/:id/track" element={<OrderTrackingPage />} />
-          <Route path="/account" element={<AccountPage />} />
-          <Route path="/terms" element={<TermsPage />} />
-          <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-        <Footer />
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+const App = () => {
+   const token = useAuthStore(s => s.accessToken);
+  
+  useSocketInit(token);
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Navbar />
+          <CartDrawer />
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/menu" element={<MenuPage />} />
+            <Route path="/menu/:itemId" element={<MenuItemDetailsPage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route
+              path="/reset-password/:token"
+              element={<ResetPasswordPage />}
+            />
+            <Route path="/about" element={<AboutPage />} />
+            <Route path="/contact" element={<ContactPage />} />
+            <Route path="/catering" element={<CateringPage />} />
+            <Route path="/checkout" element={<CheckoutPage />} />
+            <Route
+              path="/order/:id/confirmed"
+              element={<OrderConfirmedPage />}
+            />
+            <Route path="/order/:id/track" element={<OrderTrackingPage />} />
+            <Route path="/account" element={<AccountPage />} />
+            <Route path="/terms" element={<TermsPage />} />
+            <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+          <Footer />
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;
