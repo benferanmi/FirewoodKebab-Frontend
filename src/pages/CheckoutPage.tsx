@@ -1,7 +1,5 @@
-import { useState } from "react";
-import { useNavigate, Link, useSearchParams } from "react-router-dom";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useState, useEffect } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   MapPin,
@@ -9,7 +7,6 @@ import {
   CreditCard,
   FileText,
   ChevronDown,
-  ChevronUp,
   Loader2,
   ShoppingBag,
 } from "lucide-react";
@@ -21,6 +18,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
 import { useCartStore } from "@/store/cartStore";
 import { useAuthStore } from "@/store/authStore";
+import { useDeliveryStore } from "@/store/deliveryStore";
 import { useCreateOrder } from "@/hooks/useApi";
 import { formatPrice } from "@/utils/helpers";
 import { STORE_ADDRESS } from "@/utils/constants";
@@ -29,7 +27,6 @@ import type { CreateOrderDTO } from "@/types";
 
 const CheckoutPage = () => {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const items = useCartStore((s) => s.items);
   const getSubtotal = useCartStore((s) => s.getSubtotal);
   const getDeliveryFee = useCartStore((s) => s.getDeliveryFee);
@@ -38,8 +35,9 @@ const CheckoutPage = () => {
   const clearCart = useCartStore((s) => s.clearCart);
   const deliveryType = useCartStore((s) => s.deliveryType);
   const setDeliveryType = useCartStore((s) => s.setDeliveryType);
-  const user = useAuthStore((s) => s.user);
 
+  const user = useAuthStore((s) => s.user);
+  const deliveryStore = useDeliveryStore();
   const createOrderMutation = useCreateOrder();
 
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "stripe">(
@@ -48,13 +46,6 @@ const CheckoutPage = () => {
   const [instructions, setInstructions] = useState("");
   const [showSummary, setShowSummary] = useState(true);
 
-  // Address fields
-  const [street, setStreet] = useState("");
-  const [city, setCity] = useState("");
-  const [state, setState] = useState("");
-  const [zipCode, setZipCode] = useState("");
-  const [country, setCountry] = useState("");
-
   // Guest fields
   const [guestName, setGuestName] = useState("");
   const [guestEmail, setGuestEmail] = useState("");
@@ -62,11 +53,37 @@ const CheckoutPage = () => {
 
   const subtotal = getSubtotal();
   const deliveryFee = getDeliveryFee();
-
-  console.log(deliveryFee)
   const discount = getDiscount();
   const total = getTotal();
 
+  // ─── LOCATION VALIDATION EFFECT ───
+  // If delivery is selected but location isn't validated, redirect to location step
+  useEffect(() => {
+    if (deliveryType === "delivery" && !deliveryStore.isLocationValidated()) {
+      toast.error("Please validate your delivery location first");
+      navigate("/checkout/location", { replace: true });
+      return;
+    }
+  }, [deliveryType, deliveryStore, navigate]);
+
+  // ─── HANDLE DELIVERY TYPE CHANGE ───
+  const handleDeliveryTypeChange = (type: "delivery" | "collection") => {
+    setDeliveryType(type);
+
+    // If switching to delivery and not validated, redirect
+    if (type === "delivery" && !deliveryStore.isLocationValidated()) {
+      toast.error("Please validate your delivery location first");
+      navigate("/checkout/location");
+      return;
+    }
+
+    // If switching to collection, clear location validation
+    if (type === "collection") {
+      deliveryStore.clearLocationData();
+    }
+  };
+
+  // ─── EMPTY CART STATE ───
   if (items.length === 0) {
     return (
       <main
@@ -107,12 +124,6 @@ const CheckoutPage = () => {
   }
 
   const handlePlaceOrder = async () => {
-    // Validate delivery address
-    if (deliveryType === "delivery" && (!street || !city || !state)) {
-      toast.error("Please fill in your delivery address");
-      return;
-    }
-
     // Validate guest fields
     if (!user && (!guestName || !guestEmail || !guestPhone)) {
       toast.error("Please fill in your contact details");
@@ -120,12 +131,7 @@ const CheckoutPage = () => {
     }
 
     const userId = user?.id;
-
     const cartId = localStorage.getItem("cartId") || undefined;
-
-    console.log(
-      `[Checkout] Creating order with userId=${userId}, cartId=${cartId}`,
-    );
 
     const orderData: CreateOrderDTO = {
       deliveryType,
@@ -134,7 +140,17 @@ const CheckoutPage = () => {
       userId,
       cartId,
       ...(deliveryType === "delivery" && {
-        deliveryAddress: { street, city, state, zipCode, country },
+        deliveryAddress: {
+          street: deliveryStore.locationData?.selectedAddress?.street || "",
+          street2:
+            deliveryStore.locationData?.selectedAddress?.street2 || undefined,
+          zipCode: deliveryStore.locationData?.zipCode || "",
+          latitude: deliveryStore.locationData?.latitude,
+          longitude: deliveryStore.locationData?.longitude,
+          city: "",
+          state: "CA",
+          country: "US",
+        },
       }),
       ...(!user && {
         guestName,
@@ -148,13 +164,13 @@ const CheckoutPage = () => {
       const order = data.data.order;
       const paymentLink = data.data.paymentLink;
 
-      // If payment link returned, redirect to payment
       if (paymentLink) {
         window.location.href = paymentLink;
         return;
       }
 
-      clearCart();
+      await clearCart();
+      deliveryStore.clearLocationData();
       toast.success("Order placed successfully!");
       navigate(`/order/${order.id}/confirmed`);
     } catch (error: any) {
@@ -170,7 +186,7 @@ const CheckoutPage = () => {
       className="min-h-screen"
       style={{ background: "hsl(var(--background))" }}
     >
-      {/* ── HERO SECTION (CINEMATIC) ── */}
+      {/* ── HERO SECTION ── */}
       <section
         className="relative pt-40 pb-16 overflow-hidden"
         style={{
@@ -178,7 +194,6 @@ const CheckoutPage = () => {
             "linear-gradient(160deg, #1a1108 0%, #0e0d0b 50%, #1a1208 100%)",
         }}
       >
-        {/* Dual flame glows */}
         <div
           className="absolute -top-32 right-0 w-[600px] h-[600px] rounded-full pointer-events-none blur-3xl"
           style={{
@@ -231,7 +246,7 @@ const CheckoutPage = () => {
           <div className="grid lg:grid-cols-3 gap-8">
             {/* Form sections */}
             <div className="lg:col-span-2 space-y-6">
-              {/* Delivery Type */}
+              {/* Delivery Type & Location Summary */}
               <motion.section
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -243,14 +258,15 @@ const CheckoutPage = () => {
                     className="w-5 h-5"
                     style={{ color: "hsl(var(--primary))" }}
                   />
-                  Delivery Method
+                  Delivery Information
                 </h2>
+
                 <RadioGroup
                   value={deliveryType}
                   onValueChange={(v) =>
-                    setDeliveryType(v as "delivery" | "collection")
+                    handleDeliveryTypeChange(v as "delivery" | "collection")
                   }
-                  className="flex gap-4"
+                  className="flex gap-4 mb-6"
                 >
                   <motion.label
                     whileHover={{ y: -2 }}
@@ -264,7 +280,9 @@ const CheckoutPage = () => {
                     <div>
                       <p className="font-semibold text-foreground">Delivery</p>
                       <p className="text-sm text-muted-foreground">
-                        To your address
+                        {deliveryStore.getDeliveryFee() > 0
+                          ? `$${deliveryStore.getDeliveryFee().toFixed(2)}`
+                          : "Free"}
                       </p>
                     </div>
                   </motion.label>
@@ -281,9 +299,7 @@ const CheckoutPage = () => {
                       <p className="font-semibold text-foreground">
                         Collection
                       </p>
-                      <p className="text-sm text-muted-foreground">
-                        Pick up at store
-                      </p>
+                      <p className="text-sm text-muted-foreground">Free</p>
                     </div>
                   </motion.label>
                 </RadioGroup>
@@ -295,77 +311,113 @@ const CheckoutPage = () => {
                       initial={{ opacity: 0, y: 12 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -12 }}
-                      className="mt-6 space-y-4"
+                      className="space-y-5"
                     >
-                      <div className="space-y-2.5">
-                        <Label className="font-semibold">Street Address</Label>
-                        <Input
-                          value={street}
-                          onChange={(e) => setStreet(e.target.value)}
-                          placeholder="e.g. 12 Lagos Road"
-                          className="rounded-xl h-11"
-                          style={{
-                            background: "rgba(255,255,255,0.04)",
-                            border: "1px solid hsl(var(--border))",
-                          }}
-                        />
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2.5">
-                          <Label className="font-semibold">City</Label>
-                          <Input
-                            value={city}
-                            onChange={(e) => setCity(e.target.value)}
-                            placeholder="City"
-                            className="rounded-xl h-11"
-                            style={{
-                              background: "rgba(255,255,255,0.04)",
-                              border: "1px solid hsl(var(--border))",
-                            }}
-                          />
-                        </div>
-                        <div className="space-y-2.5">
-                          <Label className="font-semibold">State</Label>
-                          <Input
-                            value={state}
-                            onChange={(e) => setState(e.target.value)}
-                            placeholder="State"
-                            className="rounded-xl h-11"
-                            style={{
-                              background: "rgba(255,255,255,0.04)",
-                              border: "1px solid hsl(var(--border))",
-                            }}
-                          />
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2.5">
-                          <Label className="font-semibold">Zip Code</Label>
-                          <Input
-                            value={zipCode}
-                            onChange={(e) => setZipCode(e.target.value)}
-                            placeholder="Zip"
-                            className="rounded-xl h-11"
-                            style={{
-                              background: "rgba(255,255,255,0.04)",
-                              border: "1px solid hsl(var(--border))",
-                            }}
-                          />
-                        </div>
-                        <div className="space-y-2.5">
-                          <Label className="font-semibold">Country</Label>
-                          <Input
-                            value={country}
-                            onChange={(e) => setCountry(e.target.value)}
-                            placeholder="Country"
-                            className="rounded-xl h-11"
-                            style={{
-                              background: "rgba(255,255,255,0.04)",
-                              border: "1px solid hsl(var(--border))",
-                            }}
-                          />
-                        </div>
-                      </div>
+                      {/* Delivery Info Summary */}
+                      {deliveryStore.locationData?.deliveryInfo && (
+                        <motion.div
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          className="p-4 rounded-lg bg-primary/5 border border-primary/20 space-y-2"
+                        >
+                          <p className="text-sm font-semibold text-foreground">
+                            📍{" "}
+                            {deliveryStore.locationData.zoneName ||
+                              "Delivery Area"}
+                          </p>
+                          <div className="grid grid-cols-3 gap-3 text-sm">
+                            <div>
+                              <p className="text-muted-foreground">Fee</p>
+                              <p className="font-semibold text-foreground">
+                                ${deliveryStore.getDeliveryFee().toFixed(2)}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground">ETA</p>
+                              <p className="font-semibold text-foreground">
+                                {deliveryStore.getDeliveryETA()?.min}-
+                                {deliveryStore.getDeliveryETA()?.max} min
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground">Min Order</p>
+                              <p className="font-semibold text-foreground">
+                                ${deliveryStore.getMinimumOrder()}
+                              </p>
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+
+                      {/* Address Display (Read-only) */}
+                      {deliveryStore.locationData?.selectedAddress && (
+                        <motion.div
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          className="p-4 rounded-lg bg-secondary/50 border border-border space-y-3"
+                        >
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <p className="text-sm font-semibold text-foreground mb-1">
+                                📍 Delivery To:
+                              </p>
+                              <p className="text-sm text-foreground">
+                                {
+                                  deliveryStore.locationData.selectedAddress
+                                    .label
+                                }
+                              </p>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {
+                                  deliveryStore.locationData.selectedAddress
+                                    .street
+                                }
+                                {deliveryStore.locationData.selectedAddress
+                                  .street2 &&
+                                  `, ${deliveryStore.locationData.selectedAddress.street2}`}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {deliveryStore.locationData.zipCode}
+                              </p>
+                            </div>
+                            <Link
+                              to="/checkout/location"
+                              className="text-xs font-semibold whitespace-nowrap ml-4"
+                              style={{ color: "hsl(var(--primary))" }}
+                            >
+                              Change
+                            </Link>
+                          </div>
+                        </motion.div>
+                      )}
+
+                      {/* ZIP Code Only (if using geolocation without saved address) */}
+                      {!deliveryStore.locationData?.selectedAddress &&
+                        deliveryStore.locationData?.zipCode && (
+                          <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            className="p-4 rounded-lg bg-secondary/50 border border-border space-y-3"
+                          >
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="text-sm font-semibold text-foreground mb-1">
+                                  📍 Delivery ZIP Code:
+                                </p>
+                                <p className="text-sm text-foreground">
+                                  {deliveryStore.locationData.zipCode}
+                                </p>
+                              </div>
+                              <Link
+                                to="/checkout/location"
+                                className="text-xs font-semibold whitespace-nowrap ml-4"
+                                style={{ color: "hsl(var(--primary))" }}
+                              >
+                                Change
+                              </Link>
+                            </div>
+                          </motion.div>
+                        )}
                     </motion.div>
                   ) : (
                     <motion.div
@@ -373,7 +425,7 @@ const CheckoutPage = () => {
                       initial={{ opacity: 0, y: 12 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -12 }}
-                      className="mt-6 p-5 rounded-xl transition-all"
+                      className="p-5 rounded-xl"
                       style={{
                         background: "hsl(var(--primary) / 0.08)",
                         border: "1px solid hsl(var(--primary) / 0.2)",
@@ -421,12 +473,7 @@ const CheckoutPage = () => {
                     for faster checkout.
                   </p>
                   <div className="space-y-4">
-                    <motion.div
-                      initial={{ opacity: 0, y: 12 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.2 }}
-                      className="space-y-2.5"
-                    >
+                    <div className="space-y-2.5">
                       <Label className="font-semibold">Full Name</Label>
                       <Input
                         value={guestName}
@@ -438,14 +485,9 @@ const CheckoutPage = () => {
                           border: "1px solid hsl(var(--border))",
                         }}
                       />
-                    </motion.div>
+                    </div>
                     <div className="grid sm:grid-cols-2 gap-4">
-                      <motion.div
-                        initial={{ opacity: 0, y: 12 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.25 }}
-                        className="space-y-2.5"
-                      >
+                      <div className="space-y-2.5">
                         <Label className="font-semibold">Email</Label>
                         <Input
                           type="email"
@@ -458,26 +500,21 @@ const CheckoutPage = () => {
                             border: "1px solid hsl(var(--border))",
                           }}
                         />
-                      </motion.div>
-                      <motion.div
-                        initial={{ opacity: 0, y: 12 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.3 }}
-                        className="space-y-2.5"
-                      >
+                      </div>
+                      <div className="space-y-2.5">
                         <Label className="font-semibold">Phone</Label>
                         <Input
                           type="tel"
                           value={guestPhone}
                           onChange={(e) => setGuestPhone(e.target.value)}
-                          placeholder="+234..."
+                          placeholder="+1 (555) 123-4567"
                           className="rounded-xl h-11"
                           style={{
                             background: "rgba(255,255,255,0.04)",
                             border: "1px solid hsl(var(--border))",
                           }}
                         />
-                      </motion.div>
+                      </div>
                     </div>
                   </div>
                 </motion.section>
@@ -535,12 +572,9 @@ const CheckoutPage = () => {
                   }
                   className="space-y-3"
                 >
-                  {(["cash", "stripe"] as const).map((m, i) => (
+                  {(["cash", "stripe"] as const).map((m) => (
                     <motion.label
                       key={m}
-                      initial={{ opacity: 0, y: 12 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.3 + i * 0.05 }}
                       whileHover={{ y: -2 }}
                       className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all duration-300 ${
                         paymentMethod === m
@@ -558,7 +592,7 @@ const CheckoutPage = () => {
               </motion.section>
             </div>
 
-            {/* Order Summary */}
+            {/* Order Summary (Sticky) */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -576,6 +610,7 @@ const CheckoutPage = () => {
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   onClick={() => setShowSummary(!showSummary)}
+                  type="button"
                   className="flex items-center justify-between w-full mb-5"
                 >
                   <h2 className="font-display text-lg font-semibold text-foreground">
@@ -598,19 +633,16 @@ const CheckoutPage = () => {
                       exit={{ opacity: 0, height: 0 }}
                       className="space-y-3 mb-5 pb-5 border-b border-border"
                     >
-                      {items.map((item, i) => (
+                      {items.map((item) => (
                         <motion.div
                           key={item.id}
-                          initial={{ opacity: 0, x: -8 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: i * 0.05 }}
                           className="flex justify-between text-sm"
                         >
                           <span className="text-muted-foreground">
                             {item.quantity}× {item.name}
                           </span>
                           <span className="font-semibold text-foreground">
-                            {formatPrice(item.itemTotal)}
+                            ${item.itemTotal.toFixed(2)}
                           </span>
                         </motion.div>
                       ))}
@@ -618,12 +650,12 @@ const CheckoutPage = () => {
                   )}
                 </AnimatePresence>
 
-                {/* Pricing breakdown */}
+                {/* Pricing */}
                 <div className="space-y-3 mb-5">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Subtotal</span>
                     <span className="text-foreground font-medium">
-                      {formatPrice(subtotal)}
+                      ${subtotal.toFixed(2)}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
@@ -631,23 +663,19 @@ const CheckoutPage = () => {
                     <span className="text-foreground font-medium">
                       {deliveryType === "collection"
                         ? "Free"
-                        : formatPrice(deliveryFee)}
+                        : `$${deliveryFee.toFixed(2)}`}
                     </span>
                   </div>
                   {discount > 0 && (
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="flex justify-between text-sm"
-                    >
+                    <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Discount</span>
                       <span
                         style={{ color: "#10b981" }}
                         className="font-medium"
                       >
-                        -{formatPrice(discount)}
+                        -${discount.toFixed(2)}
                       </span>
-                    </motion.div>
+                    </div>
                   )}
                 </div>
 
@@ -662,7 +690,7 @@ const CheckoutPage = () => {
                     className="font-display font-black text-xl"
                     style={{ color: "hsl(var(--primary))" }}
                   >
-                    {formatPrice(total)}
+                    ${total.toFixed(2)}
                   </span>
                 </div>
 

@@ -25,13 +25,15 @@ import NotFound from "./pages/NotFound";
 import MenuItemDetailsPage from "./components/menu/MenuItemDetailsPage";
 import { useAuthStore } from "./store/authStore";
 import { useSocketInit } from "./hooks/useSocket";
+import CheckoutLocationPage from "./pages/CheckoutLocationPage";
 
 const queryClient = new QueryClient();
 
 const App = () => {
-   const token = useAuthStore(s => s.accessToken);
-  
+  const token = useAuthStore((s) => s.accessToken);
+
   useSocketInit(token);
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
@@ -54,7 +56,13 @@ const App = () => {
             <Route path="/about" element={<AboutPage />} />
             <Route path="/contact" element={<ContactPage />} />
             <Route path="/catering" element={<CateringPage />} />
+            {/* Checkout Flow */}
+            <Route
+              path="/checkout/location"
+              element={<CheckoutLocationPage />}
+            />
             <Route path="/checkout" element={<CheckoutPage />} />
+            {/* Order Pages */}
             <Route
               path="/order/:id/confirmed"
               element={<OrderConfirmedPage />}
@@ -63,6 +71,7 @@ const App = () => {
             <Route path="/account" element={<AccountPage />} />
             <Route path="/terms" element={<TermsPage />} />
             <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+            {/* 404 */}
             <Route path="*" element={<NotFound />} />
           </Routes>
           <Footer />

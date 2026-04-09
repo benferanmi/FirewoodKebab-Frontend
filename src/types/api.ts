@@ -60,9 +60,10 @@ export interface CreateOrderDTO {
   deliveryType: "delivery" | "collection";
   deliveryAddress?: {
     street: string;
-    city: string;
-    state: string;
+    street2?: string;
     zipCode: string;
+    state?: string;
+    city?: string;
     country: string;
     latitude?: number;
     longitude?: number;
@@ -96,13 +97,14 @@ export interface UpdateProfileDTO {
 export interface AddressDTO {
   label: string;
   street: string;
-  city: string;
-  state: string;
+  street2?: string;
   zipCode: string;
-  country: string;
+  city?: string;
+  state?: string;
+  country?: string;
   latitude?: number;
   longitude?: number;
-  isDefault: boolean;
+  isDefault?: boolean;
 }
 
 export interface CreateReviewDTO {
@@ -125,4 +127,53 @@ export interface NotificationPrefsDTO {
   sms: boolean;
   push: boolean;
   inApp: boolean;
+}
+
+export interface DeliveryValidationResponse {
+  available: boolean;
+  zoneId?: string;
+  zoneName?: string;
+  deliveryFee?: number;
+  minimumOrder?: number;
+  estimatedDeliveryTimeMin?: number;
+  estimatedDeliveryTimeMax?: number;
+}
+export interface checkDeliveryParams {
+  zipCode?: string;
+  latitude?: number;
+  longitude?: number;
+}
+export interface LocationData {
+  zipCode: string;
+  zoneName?: string;
+  latitude?: number;
+  longitude?: number;
+  isValidated: boolean;
+  deliveryInfo?: DeliveryValidationResponse;
+  selectedAddressId?: string;
+  selectedAddress?: AddressDTO;
+  method: "delivery" | "collection";
+}
+
+export interface DeliveryZone {
+  _id: string;
+  name: string;
+  deliveryFee: number;
+  minimumOrder: number;
+  estimatedDeliveryTimeMin: number;
+  estimatedDeliveryTimeMax: number;
+  active: boolean;
+}
+
+
+// ── DELIVERY ADDRESS FOR ORDERS ────────────────────────────────────────────
+export interface DeliveryAddress {
+  street: string;
+  street2?: string;
+  zipCode: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  latitude?: number;
+  longitude?: number;
 }

@@ -18,14 +18,14 @@ export interface Address {
   _id: string;
   label: string;
   street: string;
-  city: string;
-  state: string;
+  street2?: string;
   zipCode: string;
-  country: string;
+  city?: string;
+  state?: string;
+  country?: string;
   latitude?: number;
   longitude?: number;
   isDefault: boolean;
-  createdAt: string;
 }
 
 export interface Category {

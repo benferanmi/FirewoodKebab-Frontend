@@ -14,7 +14,8 @@ interface CartStore {
   isCartOpen: boolean;
   deliveryFee: number | null;
   deliverySettingsLoaded: boolean;
-  cartId: string | null;  
+  cartId: string | null;
+  skipNextSync: boolean;
 
   addItem: (item: Omit<CartItem, "id" | "itemTotal">) => Promise<void>;
   updateQuantity: (id: string, quantity: number) => Promise<void>;
@@ -31,7 +32,8 @@ interface CartStore {
   syncFromServer: () => Promise<void>;
   migrateGuestCart: (mergedCart: any) => void;
   loadDeliverySettings: () => Promise<void>;
-  setCartId: (cartId: string | null) => void; 
+  setCartId: (cartId: string | null) => void;
+  setSkipNextSync: (skip: boolean) => void;
 
   // GETTERS
   getSubtotal: () => number;
@@ -53,7 +55,8 @@ export const useCartStore = create<CartStore>()(
       isCartOpen: false,
       deliveryFee: null,
       deliverySettingsLoaded: false,
-      cartId: null,  
+      cartId: null,
+      skipNextSync: false,
 
       addItem: async (item) => {
         try {
@@ -92,7 +95,7 @@ export const useCartStore = create<CartStore>()(
             quantity: item.quantity,
             variants: item.variants,
             notes: item.notes,
-            cartId: !isLoggedIn() ? get().cartId || undefined : undefined, 
+            cartId: !isLoggedIn() ? get().cartId || undefined : undefined,
           });
 
           if (data.data.cartId && !isLoggedIn()) {
@@ -128,7 +131,11 @@ export const useCartStore = create<CartStore>()(
 
           console.debug(`Updated item quantity: ${id} → ${quantity}`);
 
-          const { data } = await cartAPI.updateItem(id, quantity, !isLoggedIn() ? get().cartId || undefined : undefined);
+          const { data } = await cartAPI.updateItem(
+            id,
+            quantity,
+            !isLoggedIn() ? get().cartId || undefined : undefined,
+          );
           set({
             items: data.data.items || [],
             coupon: data.data.coupon ?? null,
@@ -145,7 +152,10 @@ export const useCartStore = create<CartStore>()(
 
           console.debug(`Removed item: ${id}`);
 
-          const { data } = await cartAPI.removeItem(id, !isLoggedIn() ? get().cartId || undefined : undefined);
+          const { data } = await cartAPI.removeItem(
+            id,
+            !isLoggedIn() ? get().cartId || undefined : undefined,
+          );
           set({
             items: data.data.items || [],
             coupon: data.data.coupon ?? null,
@@ -158,12 +168,22 @@ export const useCartStore = create<CartStore>()(
 
       clearCart: async () => {
         try {
+          // 1. Clear Zustand state immediately
           set({ items: [], coupon: null });
+
+          // 2. Flag to skip the next syncFromServer()
+          set({ skipNextSync: true });
 
           console.debug("Cleared cart");
 
-          if (isLoggedIn()) {
+          // This ensures both user AND guest carts are deleted from MongoDB
+          try {
             await cartAPI.clearCart();
+            console.info("Backend cart cleared successfully");
+          } catch (error) {
+            // Even if logged out, try to clear the cart via guest route
+            // The backend handles it gracefully
+            console.warn("Backend cart clear failed (may be guest):", error);
           }
         } catch (error: any) {
           console.error("Failed to clear cart:", error);
@@ -173,7 +193,10 @@ export const useCartStore = create<CartStore>()(
 
       applyCoupon: async (code) => {
         try {
-          const { data } = await cartAPI.applyCoupon(code, !isLoggedIn() ? get().cartId || undefined : undefined);
+          const { data } = await cartAPI.applyCoupon(
+            code,
+            !isLoggedIn() ? get().cartId || undefined : undefined,
+          );
           set({ coupon: data.data.coupon, items: data.data.items });
           toast.success("Coupon applied!");
 
@@ -190,7 +213,9 @@ export const useCartStore = create<CartStore>()(
           set({ coupon: null });
 
           if (isLoggedIn()) {
-            const { data } = await cartAPI.removeCoupon(!isLoggedIn() ? get().cartId || undefined : undefined);
+            const { data } = await cartAPI.removeCoupon(
+              !isLoggedIn() ? get().cartId || undefined : undefined,
+            );
             set({ items: data.data.items || [] });
           }
 
@@ -205,9 +230,16 @@ export const useCartStore = create<CartStore>()(
       setDeliveryType: (deliveryType) => set({ deliveryType }),
       setDeliveryAddress: (deliveryAddress) => set({ deliveryAddress }),
       setCartOpen: (isCartOpen) => set({ isCartOpen }),
-      setCartId: (cartId) => set({ cartId }),  
+      setCartId: (cartId) => set({ cartId }),
+      setSkipNextSync: (skip) => set({ skipNextSync: skip }),
 
       syncFromServer: async () => {
+        if (get().skipNextSync) {
+          console.debug("Skipping syncFromServer (post-order)");
+          set({ skipNextSync: false });
+          return;
+        }
+
         if (!isLoggedIn()) return;
 
         try {
@@ -215,7 +247,7 @@ export const useCartStore = create<CartStore>()(
           set({
             items: data.data.items ?? [],
             coupon: data.data.coupon ?? null,
-            cartId: null,  
+            cartId: null,
           });
 
           console.info(
@@ -232,7 +264,7 @@ export const useCartStore = create<CartStore>()(
           set({
             items: mergedCart.items || [],
             coupon: mergedCart.coupon || null,
-            cartId: null, 
+            cartId: null,
           });
 
           console.info(
@@ -252,7 +284,6 @@ export const useCartStore = create<CartStore>()(
             deliveryFee: flatFee,
             deliverySettingsLoaded: true,
           });
-
         } catch (error: any) {
           console.error("Failed to load delivery settings:", error);
           set({
@@ -291,7 +322,7 @@ export const useCartStore = create<CartStore>()(
         items: state.items,
         coupon: state.coupon,
         deliveryType: state.deliveryType,
-        cartId: state.cartId,  
+        cartId: state.cartId,
       }),
     },
   ),

@@ -15,8 +15,11 @@ import type {
   NotificationPrefsDTO,
   InitPaymentDTO,
   ResetPasswordDTO,
+  DeliveryValidationResponse,
+  checkDeliveryParams,
 } from "@/types";
 import { Banner, promotionsAPI } from "@/services/promotion";
+import { deliveryAPI } from "@/services/api/delivery";
 
 // ─── MENU ──────────────────────────────────────────
 export const useCategories = () =>
@@ -84,6 +87,11 @@ export const useRemoveCoupon = () => {
   });
 };
 
+export const useCheckDelivery =() =>
+  useMutation({
+    mutationFn: (data: checkDeliveryParams) =>
+      deliveryAPI.checkAvailability(data),
+  });
 // ─── ORDERS ────────────────────────────────────────
 export const useCreateOrder = () =>
   useMutation({
@@ -95,7 +103,7 @@ export const useOrder = (id: string) =>
     queryKey: ["order", id],
     queryFn: async () => {
       const { data } = await ordersAPI.getById(id);
-      return data.data.order;
+      return data.data || null;
     },
     enabled: !!id,
   });
@@ -308,7 +316,7 @@ export const useForgotPassword = () =>
   useQuery<Banner[]>({
     queryKey: ["banners"],
     queryFn: () => promotionsAPI.getBanners(),
-    staleTime: 5 * 60 * 1000, // 5 min — banners don't change frequently
+    // staleTime: 5 * 60 * 1000, // 5 min — banners don't change frequently
   });
  
 

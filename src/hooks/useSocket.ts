@@ -10,14 +10,14 @@ let socket: Socket | null = null;
 
 export function useSocketInit(token: string | null) {
   useEffect(() => {
-    if (!token || socket?.connected) return;
+    if (socket?.connected) return;
 
     socket = io(SOCKET_URL, {
-      auth: { token },  
+      auth: { token: token || undefined },
       reconnection: true,
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
-      autoConnect: true, 
+      autoConnect: true,
     });
 
     socket.on('connect', () => {
@@ -26,7 +26,9 @@ export function useSocketInit(token: string | null) {
 
     socket.on('connect_error', (error) => {
       console.error('[Socket] Connection error:', error);
-      toast.error('Connection lost. Retrying...');
+      if (token) {
+        toast.error('Connection lost. Retrying...');
+      }
     });
 
     socket.on('error', (error) => {
