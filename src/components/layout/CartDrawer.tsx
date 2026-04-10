@@ -12,6 +12,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useCartStore } from "@/store/cartStore";
 import { formatPrice } from "@/utils/helpers";
+import { CouponInput } from "@/components/CouponInput";
 
 const CartDrawer = () => {
   const {
@@ -205,8 +206,11 @@ const CartDrawer = () => {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.15 }}
-                  className="border-t border-orange-500/20 p-6 space-y-4 bg-gradient-to-r from-black to-black/90 "
+                  className="border-t border-orange-500/20 p-6 space-y-4 bg-gradient-to-r from-black to-black/90"
                 >
+                  {/* ✅ COUPON INPUT SECTION */}
+                  <CouponInput compact={true} />
+
                   {/* Summary Lines */}
                   <div className="space-y-2.5">
                     <div className="flex justify-between text-sm">
@@ -294,4 +298,3 @@ const CartDrawer = () => {
 };
 
 export default CartDrawer;
- 

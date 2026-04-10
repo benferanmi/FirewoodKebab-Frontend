@@ -123,10 +123,20 @@ export interface InitPaymentDTO {
 }
 
 export interface NotificationPrefsDTO {
-  email: boolean;
+  email: {
+    orderConfirmation: boolean;
+    orderStatus: boolean;
+    promotions: boolean;
+    reviews: boolean;
+  };
   sms: boolean;
   push: boolean;
-  inApp: boolean;
+  inApp: {
+    orderConfirmation: boolean;
+    orderStatus: boolean;
+    promotions: boolean;
+    reviews: boolean;
+  };
 }
 
 export interface DeliveryValidationResponse {
@@ -164,7 +174,6 @@ export interface DeliveryZone {
   estimatedDeliveryTimeMax: number;
   active: boolean;
 }
-
 
 // ── DELIVERY ADDRESS FOR ORDERS ────────────────────────────────────────────
 export interface DeliveryAddress {

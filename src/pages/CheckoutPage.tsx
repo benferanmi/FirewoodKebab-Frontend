@@ -22,6 +22,7 @@ import { useDeliveryStore } from "@/store/deliveryStore";
 import { useCreateOrder } from "@/hooks/useApi";
 import { formatPrice } from "@/utils/helpers";
 import { STORE_ADDRESS } from "@/utils/constants";
+import { CouponInput } from "@/components/CouponInput";
 import { toast } from "sonner";
 import type { CreateOrderDTO } from "@/types";
 
@@ -57,7 +58,6 @@ const CheckoutPage = () => {
   const total = getTotal();
 
   // ─── LOCATION VALIDATION EFFECT ───
-  // If delivery is selected but location isn't validated, redirect to location step
   useEffect(() => {
     if (deliveryType === "delivery" && !deliveryStore.isLocationValidated()) {
       toast.error("Please validate your delivery location first");
@@ -70,14 +70,12 @@ const CheckoutPage = () => {
   const handleDeliveryTypeChange = (type: "delivery" | "collection") => {
     setDeliveryType(type);
 
-    // If switching to delivery and not validated, redirect
     if (type === "delivery" && !deliveryStore.isLocationValidated()) {
       toast.error("Please validate your delivery location first");
       navigate("/checkout/location");
       return;
     }
 
-    // If switching to collection, clear location validation
     if (type === "collection") {
       deliveryStore.clearLocationData();
     }
@@ -520,11 +518,21 @@ const CheckoutPage = () => {
                 </motion.section>
               )}
 
-              {/* Special Instructions */}
+              {/* COUPON SECTION */}
               <motion.section
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
+                className="bg-card rounded-2xl p-7 border border-border shadow-[var(--shadow-card)]"
+              >
+                <CouponInput detailed={true} />
+              </motion.section>
+
+              {/* Special Instructions */}
+              <motion.section
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.25 }}
                 className="bg-card rounded-2xl p-7 border border-border shadow-[var(--shadow-card)]"
               >
                 <h2 className="font-display text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
@@ -555,7 +563,7 @@ const CheckoutPage = () => {
               <motion.section
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.25 }}
+                transition={{ delay: 0.3 }}
                 className="bg-card rounded-2xl p-7 border border-border shadow-[var(--shadow-card)]"
               >
                 <h2 className="font-display text-lg font-semibold text-foreground mb-5 flex items-center gap-2">

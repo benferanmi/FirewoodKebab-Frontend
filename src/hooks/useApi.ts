@@ -87,7 +87,7 @@ export const useRemoveCoupon = () => {
   });
 };
 
-export const useCheckDelivery =() =>
+export const useCheckDelivery = () =>
   useMutation({
     mutationFn: (data: checkDeliveryParams) =>
       deliveryAPI.checkAvailability(data),
@@ -172,7 +172,14 @@ export const useUpdateProfile = () => {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["profile"] }),
   });
 };
-
+export const useUpdateProfilePhoto = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (profilePhoto: string) =>
+      userAPI.updateProfilePhoto(profilePhoto),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["profile"] }),
+  });
+};
 export const useAddresses = () =>
   useQuery({
     queryKey: ["addresses"],
@@ -219,6 +226,49 @@ export const useDeleteAccount = () =>
   useMutation({
     mutationFn: (password: string) => userAPI.deleteAccount(password),
   });
+export const useNotificationPreferences = () =>
+  useQuery({
+    queryKey: ["notificationPreferences"],
+    queryFn: async () => {
+      const { data } = await userAPI.getNotificationPreferences();
+      return data.data;
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+export const useUpdateNotificationPreferences = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (prefs: Partial<NotificationPrefsDTO>) =>
+      userAPI.updateNotificationPreferences(prefs),
+    onSuccess: () =>
+      qc.invalidateQueries({
+        queryKey: ["notificationPreferences"],
+      }),
+  });
+};
+
+export const useDisableAllNotifications = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => userAPI.disableAllNotifications(),
+    onSuccess: () =>
+      qc.invalidateQueries({
+        queryKey: ["notificationPreferences"],
+      }),
+  });
+};
+
+export const useEnableAllNotifications = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => userAPI.enableAllNotifications(),
+    onSuccess: () =>
+      qc.invalidateQueries({
+        queryKey: ["notificationPreferences"],
+      }),
+  });
+};
 
 // ─── REVIEWS ──────────────────────────────────────
 export const useCreateReview = () => {
@@ -312,13 +362,12 @@ export const useForgotPassword = () =>
     mutationFn: (email: string) => authAPI.forgotPassword(email),
   });
 
-  export const useBanners = () =>
+export const useBanners = () =>
   useQuery<Banner[]>({
     queryKey: ["banners"],
     queryFn: () => promotionsAPI.getBanners(),
     // staleTime: 5 * 60 * 1000, // 5 min — banners don't change frequently
   });
- 
 
 export const useValidateCoupon = (code: string) =>
   useQuery({

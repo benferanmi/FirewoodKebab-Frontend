@@ -24,15 +24,20 @@ import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import NotFound from "./pages/NotFound";
 import MenuItemDetailsPage from "./components/menu/MenuItemDetailsPage";
 import { useAuthStore } from "./store/authStore";
-import { useSocketInit } from "./hooks/useSocket";
+import { useNotifications, useSocketInit } from "./hooks/useSocket";
 import CheckoutLocationPage from "./pages/CheckoutLocationPage";
 
 const queryClient = new QueryClient();
 
 const App = () => {
   const token = useAuthStore((s) => s.accessToken);
+  const user = useAuthStore((s) => s.user);
 
-  useSocketInit(token);
+  useSocketInit(token || null, user?._id || null);
+
+  useNotifications((notification) => {
+    console.log("Got notification:", notification);
+  });
 
   return (
     <QueryClientProvider client={queryClient}>

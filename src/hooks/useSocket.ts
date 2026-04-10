@@ -1,14 +1,16 @@
-import { useEffect, useRef } from 'react';
-import { io, Socket } from 'socket.io-client';
-import { toast } from 'sonner';
+import { useEffect, useRef } from "react";
+import { io, Socket } from "socket.io-client";
+import { toast } from "sonner";
 
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 
-                   import.meta.env.VITE_API_URL || 
-                   'http://localhost:5000';
+const SOCKET_URL =
+  import.meta.env.VITE_SOCKET_URL ||
+  import.meta.env.VITE_API_URL ||
+  "http://localhost:5000";
 
 let socket: Socket | null = null;
+let reconnectAttempts = 0;
 
-export function useSocketInit(token: string | null) {
+export function useSocketInit(token: string | null, userId: string | null) {
   useEffect(() => {
     if (socket?.connected) return;
 
@@ -17,59 +19,84 @@ export function useSocketInit(token: string | null) {
       reconnection: true,
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
       autoConnect: true,
     });
 
-    socket.on('connect', () => {
-      console.log('[Socket] Connected');
-    });
+    socket.on("connect", () => {
+      console.log("[Socket] Connected:", socket?.id);
+      reconnectAttempts = 0;
 
-    socket.on('connect_error', (error) => {
-      console.error('[Socket] Connection error:', error);
-      if (token) {
-        toast.error('Connection lost. Retrying...');
+      if (userId) {
+        socket!.emit("USER_JOIN", { userId });
+        console.log("[Socket] Emitted USER_JOIN for user:", userId);
       }
     });
 
-    socket.on('error', (error) => {
-      console.error('[Socket] Error:', error);
+    socket.on("USER_JOINED", (data) => {
+      console.log("[Socket] USER_JOINED confirmed:", data);
+    });
+
+    socket.on("connect_error", (error) => {
+      reconnectAttempts++;
+      console.error(
+        "[Socket] Connection error:",
+        error,
+        `(attempt ${reconnectAttempts})`,
+      );
+
+      toast.error("Connection lost. Reconnecting...", {
+        description: `Attempt ${reconnectAttempts} of 5`,
+      });
+    });
+
+    socket.on("error", (error) => {
+      console.error("[Socket] Socket error:", error);
+    });
+
+    socket.on("disconnect", (reason) => {
+      console.log("[Socket] Disconnected:", reason);
+      if (reason === "io server disconnect") {
+        // Server disconnected you, try to reconnect
+        socket?.connect();
+      }
     });
 
     return () => {
       // Don't disconnect - keep connection alive across page navigations
       // Only disconnect on logout
     };
-  }, [token]);
+  }, [token, userId]);
 }
 
 export function useOrderSocket(
   orderId: string | undefined,
-  onStatusChange: (data: { status: string; estimatedTime?: number }) => void
+  onStatusChange: (data: { status: string; estimatedTime?: number }) => void,
 ) {
   const activeRoomRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!orderId || !socket?.connected) return;
 
-    // Join tracking room
-    const roomId = `order-${orderId}`;
-    socket.emit('order:track', orderId);  
-    activeRoomRef.current = roomId;
+    // Join tracking room for this order
+    socket.emit("order:track", orderId);
+    activeRoomRef.current = `order-${orderId}`;
+    console.log("[Socket] Tracking order:", orderId);
 
     const handleOrderUpdate = (data: any) => {
-      console.log('[Socket] Order update:', data);
-      
+      console.log("[Socket] ORDER_UPDATE received:", data);
+
       onStatusChange({
         status: data.status,
         estimatedTime: data.estimatedTime,
       });
 
       const toastMessages: Record<string, string> = {
-        confirmed: '✅ Order confirmed!',
-        preparing: '👨‍🍳 Your order is being prepared',
+        confirmed: "✅ Order confirmed!",
+        preparing: "👨‍🍳 Your order is being prepared",
         out_for_delivery: `🚗 On the way! ETA: ${data.estimatedTime} mins`,
-        delivered: '🎉 Order delivered!',
-        cancelled: '❌ Order cancelled',
+        delivered: "🎉 Order delivered!",
+        cancelled: "❌ Order cancelled",
       };
 
       if (toastMessages[data.status]) {
@@ -77,18 +104,82 @@ export function useOrderSocket(
       }
     };
 
-    socket.on('order:update', handleOrderUpdate);
-    socket.on(`order:${orderId}:update`, handleOrderUpdate);
+    socket.on("ORDER_UPDATE", handleOrderUpdate);
 
     return () => {
-      socket?.off('order:update', handleOrderUpdate);
-      socket?.off(`order:${orderId}:update`, handleOrderUpdate);
+      socket?.off("ORDER_UPDATE", handleOrderUpdate);
       // Leave room if available
-      if (activeRoomRef.current) {
-        socket?.emit('order:untrack', orderId);
+      if (activeRoomRef.current && socket?.connected) {
+        socket?.emit("order:untrack", orderId);
       }
     };
   }, [orderId, onStatusChange]);
+}
+
+export function useNotifications(
+  onNotification?: (data: {
+    id: string;
+    type: string;
+    title: string;
+    message: string;
+    data?: any;
+    timestamp: Date;
+  }) => void,
+) {
+  useEffect(() => {
+    if (!socket?.connected) return;
+
+    const handleNotification = (data: any) => {
+      console.log("[Socket] NOTIFICATION received:", data);
+
+      // Toast the notification
+      toast.info(data.title, {
+        description: data.message,
+      });
+
+      // Call custom handler if provided
+      if (onNotification) {
+        onNotification(data);
+      }
+    };
+
+    socket.on("NOTIFICATION", handleNotification);
+
+    return () => {
+      socket?.off("NOTIFICATION", handleNotification);
+    };
+  }, [onNotification]);
+}
+
+export function useAdminDashboard(
+  onUpdate?: (data: {
+    totalOrders: number;
+    pendingOrders: number;
+    preparingOrders: number;
+    deliveryOrders: number;
+  }) => void,
+) {
+  useEffect(() => {
+    if (!socket?.connected) return;
+
+    // Tell backend we want admin updates
+    socket.emit("admin:watch-dashboard");
+
+    // ✅ LISTEN TO ADMIN_DASHBOARD_UPDATE
+    const handleAdminUpdate = (data: any) => {
+      console.log("[Socket] ADMIN_DASHBOARD_UPDATE received:", data);
+
+      if (onUpdate) {
+        onUpdate(data);
+      }
+    };
+
+    socket.on("ADMIN_DASHBOARD_UPDATE", handleAdminUpdate);
+
+    return () => {
+      socket?.off("ADMIN_DASHBOARD_UPDATE", handleAdminUpdate);
+    };
+  }, [onUpdate]);
 }
 
 export function getSocket(): Socket | null {
@@ -100,4 +191,8 @@ export function disconnectSocket() {
     socket.disconnect();
     socket = null;
   }
+}
+
+export function isSocketConnected(): boolean {
+  return socket?.connected ?? false;
 }

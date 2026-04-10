@@ -111,7 +111,7 @@ const OrderTrackingPage = () => {
             We couldn't find this order. Please check the order number and try
             again.
           </p>
-          <Link to="/account">
+          <Link to="/account#orders">
             <Button variant="outline">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Orders
@@ -137,7 +137,7 @@ const OrderTrackingPage = () => {
     <main className="pt-25 section-padding pb-12">
       <div className="container-wide max-w-2xl mx-auto">
         {/* Back Button */}
-        <Link to="/account" className="mb-6 inline-flex">
+        <Link to="/account#orders" className="mb-6 inline-flex">
           <Button variant="ghost" size="sm" className="gap-2">
             <ArrowLeft className="w-4 h-4" />
             Back to Orders
@@ -173,7 +173,7 @@ const OrderTrackingPage = () => {
           </h2>
 
           {/* ETA Display */}
-          {currentStep < 3 && currentStep >= 0 && (
+          {/* {currentStep < 3 && currentStep >= 0 && (
             <div className="flex items-center justify-center gap-2 text-muted-foreground text-sm mt-4 py-2 px-4 bg-primary/5 rounded-lg mx-auto">
               <Clock className="w-4 h-4 text-primary animate-pulse" />
               <span className="font-medium">
@@ -182,7 +182,7 @@ const OrderTrackingPage = () => {
                   : "Calculating ETA..."}
               </span>
             </div>
-          )}
+          )} */}
 
           {/* Last Update Timestamp */}
           {lastUpdate && (
