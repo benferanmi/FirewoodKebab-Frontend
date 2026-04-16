@@ -14,10 +14,28 @@ import {
 } from "@/utils/constants";
 import { contactAPI } from "@/services/api/contactAPI";
 import { useSettingsStore } from "@/store/settingsStore";
+import client from "@/services/api/client";
+import { useQuery } from "@tanstack/react-query";
+import { Helmet } from "react-helmet-async";
 
 const ContactPage = () => {
   const { restaurant } = useSettingsStore();
   const [loading, setLoading] = useState(false);
+  const { data: seoData } = useQuery({
+    queryKey: ["seo", "contact"],
+    queryFn: () => client.get("/public/seo/contact").then((r) => r.data.data),
+  });
+
+  const { data: contentData } = useQuery({
+    queryKey: ["content", "contact"],
+    queryFn: () =>
+      client.get("/admin/content/contact").then((r) => r.data.data),
+  });
+
+  const heroHeading = contentData?.contact?.heroHeading || "Get in Touch";
+  const heroText =
+    contentData?.contact?.heroText ||
+    "Have a question about our firewood-grilled specialties? Want to plan a catering event? Or just want to say hello? We'd love to hear from you.";
 
   const contactItems = [
     {
@@ -76,6 +94,23 @@ const ContactPage = () => {
       className="min-h-screen"
       style={{ background: "hsl(var(--background))" }}
     >
+      <Helmet>
+        <title>{seoData?.title || "Contact Us | FirewoodKebab"}</title>
+        <meta name="description" content={seoData?.description || ""} />
+        {seoData?.canonical && (
+          <link rel="canonical" href={seoData.canonical} />
+        )}
+        {seoData?.breadcrumbSchema && (
+          <script type="application/ld+json">
+            {JSON.stringify(seoData.breadcrumbSchema)}
+          </script>
+        )}
+        {seoData?.contactPointSchema && (
+          <script type="application/ld+json">
+            {JSON.stringify(seoData.contactPointSchema)}
+          </script>
+        )}
+      </Helmet>
       {/* ── HERO SECTION (CINEMATIC) ── */}
       <section
         className="relative pt-40 pb-20 overflow-hidden"
@@ -137,7 +172,7 @@ const ContactPage = () => {
               letterSpacing: "-0.02em",
             }}
           >
-            Get in Touch
+            {heroHeading}
           </motion.h1>
 
           {/* Subheading */}
@@ -151,9 +186,7 @@ const ContactPage = () => {
               lineHeight: "1.7",
             }}
           >
-            Have a question about our firewood-grilled specialties? Want to plan
-            a catering event? Or just want to say hello? We'd love to hear from
-            you. Reach out anytime!
+            {heroText}
           </motion.p>
         </div>
       </section>

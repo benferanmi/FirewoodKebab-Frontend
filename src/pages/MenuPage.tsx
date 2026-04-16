@@ -59,6 +59,7 @@ const MenuPage = () => {
     );
     setPage(1);
   };
+  
 
   return (
     <div
@@ -362,27 +363,27 @@ const MenuPage = () => {
                     <Link
                       to={`/menu/${item._id}`}
                       className="block aspect-[3/2] relative overflow-hidden group/image"
-                      style={{
-                        background: "linear-gradient(135deg, #1c1a16, #0e0d0b)",
-                      }}
+                      // style={{
+                      //   background: "linear-gradient(135deg, #1c1a16, #0e0d0b)",
+                      // }}
                     >
                       {item.image && (
                         <img
                           src={item.image}
                           alt={item.name}
-                          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-115"
+                          className="w-full h-full bg-none object-cover transition-transform duration-700 group-hover:scale-115"
                         />
                       )}
 
                       {/* Premium overlay gradient (bottom) */}
-                      <div
+                      {/* <div
                         className="absolute inset-0 pointer-events-none"
                         style={{
                           background:
                             "linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.3) 40%, rgba(0,0,0,0.6) 100%)",
                           opacity: 0.8,
                         }}
-                      />
+                      /> */}
 
                       {/* Badge group - top right */}
                       <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">

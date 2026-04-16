@@ -22,6 +22,9 @@ import { toast } from "sonner";
 import type { MenuItem } from "@/types";
 import MenuItemModal from "@/components/menu/MenuItemModal";
 import { contactAPI } from "@/services/api/contactAPI";
+import client from "@/services/api/client";
+import { useQuery } from "@tanstack/react-query";
+import { Helmet } from "react-helmet-async";
 
 const features = [
   {
@@ -53,6 +56,26 @@ const CateringPage = () => {
   });
   const cateringItems = cateringData?.items || [];
   const addItem = useCartStore((s) => s.addItem);
+  const { data: seoData } = useQuery({
+    queryKey: ["seo", "catering"],
+    queryFn: () => client.get("/public/seo/catering").then((r) => r.data.data),
+  });
+
+  const { data: contentData } = useQuery({
+    queryKey: ["content", "catering"],
+    queryFn: () =>
+      client.get("/admin/content/catering").then((r) => r.data.data),
+  });
+
+  const heroHeading = contentData?.catering?.heroHeading || "Catering Services";
+  const heroText =
+    contentData?.catering?.heroText ||
+    "Bring the authentic heat of firewood grilling to your event. From intimate gatherings to grand celebrations, we deliver flame-kissed perfection every time.";
+
+  // Falls back to hardcoded array if CMS has no features saved yet
+  const cmsFeatures = contentData?.catering?.features;
+  const activeFeatures =
+    cmsFeatures && cmsFeatures.length > 0 ? cmsFeatures : features;
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -99,6 +122,18 @@ const CateringPage = () => {
       className="min-h-screen"
       style={{ background: "hsl(var(--background))" }}
     >
+      <Helmet>
+        <title>{seoData?.title || "Catering | FirewoodKebab"}</title>
+        <meta name="description" content={seoData?.description || ""} />
+        {seoData?.canonical && (
+          <link rel="canonical" href={seoData.canonical} />
+        )}
+        {seoData?.breadcrumbSchema && (
+          <script type="application/ld+json">
+            {JSON.stringify(seoData.breadcrumbSchema)}
+          </script>
+        )}
+      </Helmet>
       {/* ── HERO SECTION (CINEMATIC UPGRADE) ── */}
       <section
         className="relative pt-40 pb-20 overflow-hidden"
@@ -160,7 +195,7 @@ const CateringPage = () => {
               letterSpacing: "-0.02em",
             }}
           >
-            Catering Services
+            {heroHeading}
           </motion.h1>
 
           {/* Subheading - more descriptive */}
@@ -174,9 +209,7 @@ const CateringPage = () => {
               lineHeight: "1.7",
             }}
           >
-            Bring the authentic heat of firewood grilling to your event. From
-            intimate gatherings to grand celebrations, we deliver flame-kissed
-            perfection every time.
+            {heroText}
           </motion.p>
 
           {/* CTA Button */}
@@ -215,7 +248,7 @@ const CateringPage = () => {
       <section className="py-16 md:py-24">
         <div className="container-wide">
           <div className="grid sm:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            {features.map((f, i) => (
+            {activeFeatures.map((f, i) => (
               <motion.div
                 key={f.title}
                 initial={{ opacity: 0, y: 20 }}
