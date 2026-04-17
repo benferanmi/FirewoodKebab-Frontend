@@ -9,6 +9,10 @@ import {
   Star,
   Plus,
   Flame,
+  Award,
+  Heart,
+  LucideIcon,
+  Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -63,9 +67,19 @@ const CateringPage = () => {
 
   const { data: contentData } = useQuery({
     queryKey: ["content", "catering"],
-    queryFn: () =>
-      client.get("/admin/content/catering").then((r) => r.data.data),
+    queryFn: () => client.get("/content/catering").then((r) => r.data),
   });
+
+  const iconMap: Record<string, LucideIcon> = {
+    UtensilsCrossed,
+    Users,
+    Calendar,
+    Star,
+    Flame,
+    Award,
+    Heart,
+    Zap,
+  };
 
   const heroHeading = contentData?.catering?.heroHeading || "Catering Services";
   const heroText =
@@ -248,56 +262,59 @@ const CateringPage = () => {
       <section className="py-16 md:py-24">
         <div className="container-wide">
           <div className="grid sm:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            {activeFeatures.map((f, i) => (
-              <motion.div
-                key={f.title}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                className="flex flex-col items-center text-center p-8 rounded-2xl transition-all duration-300"
-                style={{
-                  background: "hsl(var(--card))",
-                  border: "1px solid hsl(var(--border))",
-                  boxShadow: "var(--shadow-card)",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor =
-                    "hsl(var(--primary) / 0.4)";
-                  e.currentTarget.style.boxShadow =
-                    "0 16px 32px rgba(255,128,0,0.12)";
-                  e.currentTarget.style.transform = "translateY(-8px)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = "hsl(var(--border))";
-                  e.currentTarget.style.boxShadow = "var(--shadow-card)";
-                  e.currentTarget.style.transform = "translateY(0)";
-                }}
-              >
-                {/* Icon box - enhanced */}
+            {activeFeatures.map((f, i) => {
+              const Icon = iconMap[f.icon] ?? Star;
+              return (
                 <motion.div
-                  whileHover={{ scale: 1.1 }}
-                  className="w-16 h-16 rounded-2xl flex items-center justify-center mb-6 transition-all duration-300"
+                  key={f.title}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.1 }}
+                  className="flex flex-col items-center text-center p-8 rounded-2xl transition-all duration-300"
                   style={{
-                    background: "hsl(var(--primary) / 0.15)",
-                    color: "hsl(var(--primary))",
+                    background: "hsl(var(--card))",
+                    border: "1px solid hsl(var(--border))",
+                    boxShadow: "var(--shadow-card)",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor =
+                      "hsl(var(--primary) / 0.4)";
+                    e.currentTarget.style.boxShadow =
+                      "0 16px 32px rgba(255,128,0,0.12)";
+                    e.currentTarget.style.transform = "translateY(-8px)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = "hsl(var(--border))";
+                    e.currentTarget.style.boxShadow = "var(--shadow-card)";
+                    e.currentTarget.style.transform = "translateY(0)";
                   }}
                 >
-                  <f.icon className="w-7 h-7" />
-                </motion.div>
+                  {/* Icon box - enhanced */}
+                  <motion.div
+                    whileHover={{ scale: 1.1 }}
+                    className="w-16 h-16 rounded-2xl flex items-center justify-center mb-6 transition-all duration-300"
+                    style={{
+                      background: "hsl(var(--primary) / 0.15)",
+                      color: "hsl(var(--primary))",
+                    }}
+                  >
+                    <Icon className="w-7 h-7" />
+                  </motion.div>
 
-                {/* Content */}
-                <h3 className="font-display font-semibold text-base mb-3">
-                  {f.title}
-                </h3>
-                <p
-                  className="text-sm leading-relaxed"
-                  style={{ color: "hsl(var(--muted-foreground))" }}
-                >
-                  {f.description}
-                </p>
-              </motion.div>
-            ))}
+                  {/* Content */}
+                  <h3 className="font-display font-semibold text-base mb-3">
+                    {f.title}
+                  </h3>
+                  <p
+                    className="text-sm leading-relaxed"
+                    style={{ color: "hsl(var(--muted-foreground))" }}
+                  >
+                    {f.description}
+                  </p>
+                </motion.div>
+              );
+            })}
           </div>
         </div>
       </section>

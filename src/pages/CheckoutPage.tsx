@@ -25,6 +25,9 @@ import { STORE_ADDRESS } from "@/utils/constants";
 import { CouponInput } from "@/components/CouponInput";
 import { toast } from "sonner";
 import type { CreateOrderDTO } from "@/types";
+import { TipSelector } from "@/components/checkout.ts/TipSelector";
+import { settingsAPI } from "@/services/api/settings";
+import { useQuery } from "@tanstack/react-query";
 
 const CheckoutPage = () => {
   const navigate = useNavigate();
@@ -36,6 +39,7 @@ const CheckoutPage = () => {
   const clearCart = useCartStore((s) => s.clearCart);
   const deliveryType = useCartStore((s) => s.deliveryType);
   const setDeliveryType = useCartStore((s) => s.setDeliveryType);
+  const [tipAmount, setTipAmount] = useState(0);
 
   const user = useAuthStore((s) => s.user);
   const deliveryStore = useDeliveryStore();
@@ -56,6 +60,12 @@ const CheckoutPage = () => {
   const deliveryFee = getDeliveryFee();
   const discount = getDiscount();
   const total = getTotal();
+  const { data: paymentOptions} = useQuery({
+    queryKey: ["payment-options"],
+    queryFn: () => settingsAPI.getPaymentOptions(),
+  });
+
+  console.log("Payment options:", paymentOptions);
 
   // ─── LOCATION VALIDATION EFFECT ───
   useEffect(() => {
@@ -128,13 +138,14 @@ const CheckoutPage = () => {
       return;
     }
 
-    const userId = user?.id;
+    const userId = user?._id;
     const cartId = localStorage.getItem("cartId") || undefined;
 
     const orderData: CreateOrderDTO = {
       deliveryType,
       paymentMethod,
       specialInstructions: instructions || undefined,
+      tipAmount,
       userId,
       cartId,
       ...(deliveryType === "delivery" && {
@@ -559,6 +570,22 @@ const CheckoutPage = () => {
                 </p>
               </motion.section>
 
+              {paymentOptions?.tipsEnabled && (
+                <motion.section
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.28 }}
+                  className="bg-card rounded-2xl p-7 border border-border shadow-[var(--shadow-card)]"
+                >
+                  <TipSelector
+                    subtotal={subtotal}
+                    tipPercentages={
+                      paymentOptions.tipPercentages || [15, 18, 20]
+                    }
+                    onTipChange={setTipAmount}
+                  />
+                </motion.section>
+              )}
               {/* Payment */}
               <motion.section
                 initial={{ opacity: 0, y: 20 }}
@@ -685,6 +712,14 @@ const CheckoutPage = () => {
                       </span>
                     </div>
                   )}
+                  {tipAmount > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Tip</span>
+                      <span className="text-foreground font-medium">
+                        ${(tipAmount).toFixed(2)}
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 <Separator className="my-5" />
@@ -698,7 +733,7 @@ const CheckoutPage = () => {
                     className="font-display font-black text-xl"
                     style={{ color: "hsl(var(--primary))" }}
                   >
-                    ${total.toFixed(2)}
+                 ${((subtotal + deliveryFee - discount + tipAmount)).toFixed(2)}
                   </span>
                 </div>
 

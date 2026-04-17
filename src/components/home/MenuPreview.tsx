@@ -93,13 +93,13 @@ const MenuPreview = () => {
       style={{ background: "var(--gradient-warm)" }}
     >
       {/* Decorative glow in background */}
-      <div
+      {/* <div
         className="absolute inset-0 pointer-events-none"
         style={{
           background:
             "radial-gradient(ellipse 80% 40% at 50% 0%, hsl(var(--primary) / 0.08) 0%, transparent 70%)",
         }}
-      />
+      /> */}
 
       <div className="container-wide relative z-10">
         {/* Section header */}
@@ -198,13 +198,13 @@ const MenuPreview = () => {
                           className="w-full h-full object-cover transition-transform duration-500 group-hover/img:scale-110"
                         />
                         {/* Rich gradient overlay — warm at bottom */}
-                        <div
+                        {/* <div
                           className="absolute inset-0 opacity-0 group-hover/img:opacity-100 transition-opacity duration-300"
                           style={{
                             background:
                               "linear-gradient(to top, rgba(0,0,0,0.4), transparent 60%)",
                           }}
-                        />
+                        /> */}
                       </>
                     ) : (
                       <ImageFallback />

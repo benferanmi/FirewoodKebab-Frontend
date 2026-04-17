@@ -20,6 +20,7 @@ const NotificationsTab = () => {
     page: 1,
     limit: 20,
   });
+
   const markAllRead = useMarkAllRead();
   const { data: prefs, isLoading: prefsLoading } =
     useNotificationPreferences();
@@ -127,7 +128,7 @@ const NotificationsTab = () => {
           <div className="space-y-2">
             {data.notifications.map((n: Notification) => (
               <div
-                key={n.id}
+                key={n._id}
                 className={`p-4 rounded-xl border ${
                   n.isRead
                     ? "border-border bg-card"

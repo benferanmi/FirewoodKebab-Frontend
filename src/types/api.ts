@@ -73,6 +73,7 @@ export interface CreateOrderDTO {
   guestName?: string;
   specialInstructions?: string;
   paymentMethod: "cash" | "stripe";
+  tipAmount?: number;
   userId?: string;
   cartId?: string;
 }

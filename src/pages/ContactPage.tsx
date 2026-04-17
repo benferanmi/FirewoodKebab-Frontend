@@ -29,7 +29,7 @@ const ContactPage = () => {
   const { data: contentData } = useQuery({
     queryKey: ["content", "contact"],
     queryFn: () =>
-      client.get("/admin/content/contact").then((r) => r.data.data),
+      client.get("/content/contact").then((r) => r.data),
   });
 
   const heroHeading = contentData?.contact?.heroHeading || "Get in Touch";

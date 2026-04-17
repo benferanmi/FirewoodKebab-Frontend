@@ -331,8 +331,8 @@ export const useNotifications = (params?: {
     queryFn: async () => {
       const { data } = await notificationsAPI.getAll(params);
       return {
-        notifications: data.data.notifications,
-        pagination: data.pagination,
+        notifications: data.data.data,
+        pagination: data.data.pagination,
       };
     },
   });

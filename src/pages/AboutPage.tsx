@@ -11,6 +11,7 @@ const AboutPage = () => {
   const [contentData, setContentData] = useState<IAboutContent | null>(null);
   const [loading, setLoading] = useState(true);
 
+  
   useEffect(() => {
     loadAboutPageData();
   }, []);
@@ -19,12 +20,12 @@ const AboutPage = () => {
     try {
       const [seoRes, contentRes] = await Promise.all([
         client.get("/public/seo/about"),
-        client.get("/admin/content/about"),
+        client.get("/content/about"),
       ]);
 
       setSeoData(seoRes.data.data);
-      if (contentRes.data.data?.about) {
-        setContentData(contentRes.data.data.about);
+      if (contentRes.data?.about) {
+        setContentData(contentRes.data?.about);
       }
     } catch (error) {
       console.error("Failed to load about page data:", error);
@@ -209,6 +210,7 @@ const AboutPageContent = ({
     Users,
     Award,
   };
+
 
   // Hero heading: supports a two-line format separated by "\n"
   const [heroLine1, heroLine2] = (

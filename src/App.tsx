@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
-import { HelmetProvider } from "react-helmet-async";
+import { Helmet, HelmetProvider } from "react-helmet-async";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -27,6 +27,7 @@ import MenuItemDetailsPage from "./components/menu/MenuItemDetailsPage";
 import { useAuthStore } from "./store/authStore";
 import { useNotifications, useSocketInit } from "./hooks/useSocket";
 import CheckoutLocationPage from "./pages/CheckoutLocationPage";
+import { useSeoStore } from "./store/seoStore";
 
 const queryClient = new QueryClient();
 
@@ -35,13 +36,39 @@ const App = () => {
   const user = useAuthStore((s) => s.user);
 
   useSocketInit(token || null, user?._id || null);
-
+  const { globalSeo } = useSeoStore();
   useNotifications((notification) => {
     console.log("Got notification:", notification);
   });
 
   return (
     <HelmetProvider>
+      <Helmet>
+        <title>{globalSeo?.siteTitle ?? "FirewoodKebab"}</title>
+        <meta name="description" content={globalSeo?.metaDescription ?? ""} />
+        {globalSeo?.googleSearchConsoleCode && (
+          <meta
+            name="google-site-verification"
+            content={globalSeo.googleSearchConsoleCode}
+          />
+        )}
+        {globalSeo?.ogImageUrl && (
+          <meta property="og:image" content={globalSeo.ogImageUrl} />
+        )}
+      </Helmet>
+
+      {/* Google Analytics — runs once globally */}
+      {globalSeo?.googleAnalyticsId && (
+        <>
+          <script
+            async
+            src={`https://www.googletagmanager.com/gtag/js?id=${globalSeo.googleAnalyticsId}`}
+          />
+          <script>
+            {`window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','${globalSeo.googleAnalyticsId}');`}
+          </script>
+        </>
+      )}
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <Toaster />

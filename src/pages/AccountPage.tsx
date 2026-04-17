@@ -1,23 +1,11 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { User, Package, MapPin, Bell, LogOut, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Switch } from "@/components/ui/switch";
 import { useAuthStore } from "@/store/authStore";
 import { useNavigate, useLocation } from "react-router-dom";
-import {
-  useProfile,
-  useUpdateProfile,
-  useNotifications,
-  useMarkAllRead,
-  useUpdateNotificationPrefs,
-  useDeleteAccount,
-} from "@/hooks/useApi";
+
 import { toast } from "sonner";
-import type { Notification } from "@/types";
 import OrdersTab from "@/components/account/OrdersTab";
 import { disconnectSocket } from "@/hooks/useSocket";
 import AddressesTab from "@/components/account/Addressestab";
@@ -61,7 +49,7 @@ const AccountPage = () => {
   }
 
   return (
-    <main className="pt-20 section-padding">
+    <main className="pt-28 section-padding">
       <div className="container-wide">
         <h1 className="text-3xl font-display font-bold text-foreground mb-8">
           My Account

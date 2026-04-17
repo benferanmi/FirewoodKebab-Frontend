@@ -10,6 +10,7 @@ import { NAV_LINKS } from "@/utils/constants";
 import { useSettingsStore } from "@/store/settingsStore";
 import logoBlack from "@/assets/logo_black.png";
 import logoWhite from "@/assets/logo_white.png";
+import { useSeoStore } from "@/store/seoStore";
 
 const Navbar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -26,6 +27,7 @@ const Navbar = () => {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated());
 
   const fetchSettings = useSettingsStore((s) => s.fetch);
+  const fetchSeo = useSeoStore((s) => s.fetch);
   const loadDeliverySettings = useCartStore((s) => s.loadDeliverySettings);
 
   const [cartSyncing, setCartSyncing] = useState(false);
@@ -38,6 +40,7 @@ const Navbar = () => {
   // Fetch global settings once on mount
   useEffect(() => {
     fetchSettings();
+    fetchSeo();
     loadDeliverySettings();
   }, []);
 
@@ -74,7 +77,7 @@ const Navbar = () => {
               }
         }
       >
-        <div className="container-wide flex items-center justify-between h-16 md:h-20">
+        <div className="container-wide flex items-center justify-between h-16 md:h-[90px]">
           {/* Logo */}
           <Link to="/" className="flex items-center shrink-0">
             {/* Light mode */}
@@ -82,7 +85,7 @@ const Navbar = () => {
               // src={isTransparent ? logoWhite : logoBlack}
               src={logoWhite}
               alt="Firewood Kebab"
-              className="h-[52px] w-auto block dark:hidden transition-opacity duration-200"
+              className="h-[84px] w-auto block dark:hidden transition-opacity duration-200"
               height={52}
             />
             {/* Dark mode — always white */}

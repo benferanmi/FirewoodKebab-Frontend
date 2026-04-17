@@ -146,7 +146,7 @@ export interface Coupon {
 }
 
 export interface Notification {
-  id: string;
+  _id: string;
   type:
     | "order_confirmation"
     | "order_update"
