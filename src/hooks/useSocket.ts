@@ -7,15 +7,25 @@ const SOCKET_URL =
   import.meta.env.VITE_API_URL ||
   "http://localhost:5000";
 
+// Singleton client socket — never used for admin
 let socket: Socket | null = null;
 let reconnectAttempts = 0;
 
 export function useSocketInit(token: string | null, userId: string | null) {
   useEffect(() => {
-    if (socket?.connected) return;
+    // Tear down any existing socket before rebuilding
+    if (socket) {
+      socket.disconnect();
+      socket = null;
+    }
+
+    // Normalize: guard against "null" / "undefined" strings from localStorage
+    const cleanToken =
+      token && token !== "null" && token !== "undefined" ? token : null;
 
     socket = io(SOCKET_URL, {
-      auth: { token: token || undefined },
+      // Send empty auth object for guests — never send token: undefined
+      auth: cleanToken ? { token: cleanToken } : {},
       reconnection: true,
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
@@ -40,9 +50,8 @@ export function useSocketInit(token: string | null, userId: string | null) {
     socket.on("connect_error", (error) => {
       reconnectAttempts++;
       console.error(
-        "[Socket] Connection error:",
-        error,
-        `(attempt ${reconnectAttempts})`,
+        `[Socket] Connection error (attempt ${reconnectAttempts}):`,
+        error.message,
       );
 
       toast.error("Connection lost. Reconnecting...", {
@@ -57,14 +66,15 @@ export function useSocketInit(token: string | null, userId: string | null) {
     socket.on("disconnect", (reason) => {
       console.log("[Socket] Disconnected:", reason);
       if (reason === "io server disconnect") {
-        // Server disconnected you, try to reconnect
         socket?.connect();
       }
     });
 
+    // Clean up when token/userId changes (login, logout, guest transition)
     return () => {
-      // Don't disconnect - keep connection alive across page navigations
-      // Only disconnect on logout
+      socket?.disconnect();
+      socket = null;
+      reconnectAttempts = 0;
     };
   }, [token, userId]);
 }
@@ -78,7 +88,6 @@ export function useOrderSocket(
   useEffect(() => {
     if (!orderId || !socket?.connected) return;
 
-    // Join tracking room for this order
     socket.emit("order:track", orderId);
     activeRoomRef.current = `order-${orderId}`;
     console.log("[Socket] Tracking order:", orderId);
@@ -108,10 +117,10 @@ export function useOrderSocket(
 
     return () => {
       socket?.off("ORDER_UPDATE", handleOrderUpdate);
-      // Leave room if available
       if (activeRoomRef.current && socket?.connected) {
         socket?.emit("order:untrack", orderId);
       }
+      activeRoomRef.current = null;
     };
   }, [orderId, onStatusChange]);
 }
@@ -132,15 +141,11 @@ export function useNotifications(
     const handleNotification = (data: any) => {
       console.log("[Socket] NOTIFICATION received:", data);
 
-      // Toast the notification
       toast.info(data.title, {
         description: data.message,
       });
 
-      // Call custom handler if provided
-      if (onNotification) {
-        onNotification(data);
-      }
+      onNotification?.(data);
     };
 
     socket.on("NOTIFICATION", handleNotification);
@@ -151,45 +156,16 @@ export function useNotifications(
   }, [onNotification]);
 }
 
-export function useAdminDashboard(
-  onUpdate?: (data: {
-    totalOrders: number;
-    pendingOrders: number;
-    preparingOrders: number;
-    deliveryOrders: number;
-  }) => void,
-) {
-  useEffect(() => {
-    if (!socket?.connected) return;
-
-    // Tell backend we want admin updates
-    socket.emit("admin:watch-dashboard");
-
-    // ✅ LISTEN TO ADMIN_DASHBOARD_UPDATE
-    const handleAdminUpdate = (data: any) => {
-      console.log("[Socket] ADMIN_DASHBOARD_UPDATE received:", data);
-
-      if (onUpdate) {
-        onUpdate(data);
-      }
-    };
-
-    socket.on("ADMIN_DASHBOARD_UPDATE", handleAdminUpdate);
-
-    return () => {
-      socket?.off("ADMIN_DASHBOARD_UPDATE", handleAdminUpdate);
-    };
-  }, [onUpdate]);
-}
-
 export function getSocket(): Socket | null {
   return socket;
 }
 
 export function disconnectSocket() {
-  if (socket?.connected) {
+  if (socket) {
     socket.disconnect();
     socket = null;
+    reconnectAttempts = 0;
+    console.log("[Socket] Disconnected and cleaned up");
   }
 }
 
