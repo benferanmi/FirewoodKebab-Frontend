@@ -55,17 +55,32 @@ const CheckoutPage = () => {
   const [guestName, setGuestName] = useState("");
   const [guestEmail, setGuestEmail] = useState("");
   const [guestPhone, setGuestPhone] = useState("");
-
-  const subtotal = getSubtotal();
-  const deliveryFee = getDeliveryFee();
-  const discount = getDiscount();
-  const total = getTotal();
-  const { data: paymentOptions} = useQuery({
+  const { data: paymentOptions } = useQuery({
     queryKey: ["payment-options"],
     queryFn: () => settingsAPI.getPaymentOptions(),
   });
+  const { data: deliveryZoneData } = useQuery({
+    queryKey: ["deliveryZone", deliveryStore.locationData?.zipCode],
+    queryFn: () =>
+      settingsAPI.getDeliverySettings({
+        zipCode: deliveryStore.locationData?.zipCode,
+        latitude: deliveryStore.locationData?.latitude,
+        longitude: deliveryStore.locationData?.longitude,
+      }),
+    enabled:
+      deliveryType === "delivery" &&
+      (!!deliveryStore.locationData?.zipCode ||
+        (!!deliveryStore.locationData?.latitude &&
+          !!deliveryStore.locationData?.longitude)),
+  });
 
-  console.log("Payment options:", paymentOptions);
+  const deliveryFee = deliveryZoneData?.zone?.deliveryFee ?? 0;
+  const zoneName = deliveryZoneData?.zone?.name;
+  const subtotal = getSubtotal();
+  const discount = getDiscount();
+  const totalBeforeTip = subtotal + deliveryFee - discount;
+  const totalWithTip = totalBeforeTip + tipAmount;
+  const total = getTotal();
 
   // ─── LOCATION VALIDATION EFFECT ───
   useEffect(() => {
@@ -137,6 +152,18 @@ const CheckoutPage = () => {
       toast.error("Please fill in your contact details");
       return;
     }
+    if (paymentMethod === "stripe" && !guestEmail) {
+      toast.error("Email is required for card payment");
+      return;
+    }
+    if (tipAmount < 0) {
+      toast.error("Tip cannot be negative");
+      return;
+    }
+    if (items.length === 0) {
+      toast.error("Your cart is empty");
+      return;
+    }
 
     const userId = user?._id;
     const cartId = localStorage.getItem("cartId") || undefined;
@@ -167,21 +194,24 @@ const CheckoutPage = () => {
         guestPhone,
       }),
     };
-
     try {
       const { data } = await createOrderMutation.mutateAsync(orderData);
       const order = data.data.order;
       const paymentLink = data.data.paymentLink;
 
       if (paymentLink) {
+        // Card payment - redirect to Stripe
         window.location.href = paymentLink;
         return;
       }
 
+      // Cash/COD payment - no payment link needed
       await clearCart();
       deliveryStore.clearLocationData();
       toast.success("Order placed successfully!");
-      navigate(`/order/${order.id}/confirmed`);
+
+      // Redirect to orders page
+      navigate("/account#orders", { replace: true });
     } catch (error: any) {
       const msg =
         error.response?.data?.message ||
@@ -331,27 +361,39 @@ const CheckoutPage = () => {
                         >
                           <p className="text-sm font-semibold text-foreground">
                             📍{" "}
-                            {deliveryStore.locationData.zoneName ||
+                            {zoneName ||
+                              deliveryStore.locationData.zoneName ||
                               "Delivery Area"}
                           </p>
                           <div className="grid grid-cols-3 gap-3 text-sm">
                             <div>
                               <p className="text-muted-foreground">Fee</p>
                               <p className="font-semibold text-foreground">
-                                ${deliveryStore.getDeliveryFee().toFixed(2)}
+                                ${deliveryFee.toFixed(2)}
                               </p>
                             </div>
                             <div>
                               <p className="text-muted-foreground">ETA</p>
                               <p className="font-semibold text-foreground">
-                                {deliveryStore.getDeliveryETA()?.min}-
-                                {deliveryStore.getDeliveryETA()?.max} min
+                                {
+                                  deliveryZoneData?.zone?.estimatedDeliveryTime
+                                    ?.min
+                                }
+                                -
+                                {
+                                  deliveryZoneData?.zone?.estimatedDeliveryTime
+                                    ?.max
+                                }{" "}
+                                min
                               </p>
                             </div>
                             <div>
                               <p className="text-muted-foreground">Min Order</p>
                               <p className="font-semibold text-foreground">
-                                ${deliveryStore.getMinimumOrder()}
+                                $
+                                {(
+                                  deliveryZoneData?.zone?.minimumOrder ?? 0
+                                ).toFixed(2)}
                               </p>
                             </div>
                           </div>
@@ -716,7 +758,7 @@ const CheckoutPage = () => {
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Tip</span>
                       <span className="text-foreground font-medium">
-                        ${(tipAmount).toFixed(2)}
+                        ${tipAmount.toFixed(2)}
                       </span>
                     </div>
                   )}
@@ -724,16 +766,38 @@ const CheckoutPage = () => {
 
                 <Separator className="my-5" />
 
-                {/* Total */}
+                {/* Subtotal + Delivery before tip */}
+                <div className="space-y-2 mb-5">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">
+                      Subtotal + Delivery
+                    </span>
+                    <span className="text-foreground font-medium">
+                      ${totalBeforeTip.toFixed(2)}
+                    </span>
+                  </div>
+                  {tipAmount > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">+ Tip</span>
+                      <span className="text-foreground font-medium">
+                        ${tipAmount.toFixed(2)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                <Separator className="my-5" />
+
+                {/* TOTAL */}
                 <div className="flex justify-between mb-7">
                   <span className="text-foreground font-display font-bold">
-                    Total
+                    Total {tipAmount > 0 && "(with tip)"}
                   </span>
                   <span
                     className="font-display font-black text-xl"
                     style={{ color: "hsl(var(--primary))" }}
                   >
-                 ${((subtotal + deliveryFee - discount + tipAmount)).toFixed(2)}
+                    ${totalWithTip.toFixed(2)}
                   </span>
                 </div>
 

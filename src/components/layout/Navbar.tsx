@@ -28,7 +28,6 @@ const Navbar = () => {
 
   const fetchSettings = useSettingsStore((s) => s.fetch);
   const fetchSeo = useSeoStore((s) => s.fetch);
-  const loadDeliverySettings = useCartStore((s) => s.loadDeliverySettings);
 
   const [cartSyncing, setCartSyncing] = useState(false);
 
@@ -41,7 +40,6 @@ const Navbar = () => {
   useEffect(() => {
     fetchSettings();
     fetchSeo();
-    loadDeliverySettings();
   }, []);
 
   // Sync cart when auth state changes

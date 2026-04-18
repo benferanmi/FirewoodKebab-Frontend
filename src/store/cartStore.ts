@@ -277,8 +277,14 @@ export const useCartStore = create<CartStore>()(
 
       loadDeliverySettings: async () => {
         try {
-          const { data } = await settingsAPI.getDeliverySettings();
-          const flatFee = data.data.flatFee || 0;
+          const response = await settingsAPI.getDeliverySettings();
+
+          const flatFee =
+            response.zone?.deliveryFee ??
+            response.globalDefaults?.minOrderAmount ??
+            500;
+
+          console.log("Loaded delivery settings:", response);
 
           set({
             deliveryFee: flatFee,

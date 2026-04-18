@@ -20,6 +20,7 @@ import type {
 } from "@/types";
 import { Banner, promotionsAPI } from "@/services/promotion";
 import { deliveryAPI } from "@/services/api/delivery";
+import { settingsAPI } from "@/services/api/settings";
 
 // ─── MENU ──────────────────────────────────────────
 export const useCategories = () =>
@@ -50,6 +51,31 @@ export const useMenuItem = (id: string) =>
       return data.data.item;
     },
     enabled: !!id,
+  });
+
+export const usePaymentOptions = () =>
+  useQuery({
+    queryKey: ["payment-options"],
+    queryFn: async () => {
+      const data = await settingsAPI.getPaymentOptions();
+      return data;
+    },
+    staleTime: 10 * 60 * 1000,
+  });
+
+export const useDeliverySettings = (params?: {
+  zipCode?: string;
+  latitude?: number;
+  longitude?: number;
+}) =>
+  useQuery({
+    queryKey: ["delivery-settings", params],
+    queryFn: async () => {
+      const data = await settingsAPI.getDeliverySettings(params);
+      return data;
+    },
+    enabled: !!params?.zipCode || (!!params?.latitude && !!params?.longitude),
+    retry: 1,
   });
 
 // ─── CART (server-synced) ──────────────────────────
@@ -92,11 +118,56 @@ export const useCheckDelivery = () =>
     mutationFn: (data: checkDeliveryParams) =>
       deliveryAPI.checkAvailability(data),
   });
-// ─── ORDERS ────────────────────────────────────────
-export const useCreateOrder = () =>
+
+export const useValidateCheckout = () =>
   useMutation({
-    mutationFn: (data: CreateOrderDTO) => ordersAPI.create(data),
+    mutationFn: async (data: {
+      subtotal: number;
+      deliveryFee: number;
+      discount: number;
+      tipAmount: number;
+      paymentMethod: string;
+      hasItems: boolean;
+    }) => {
+      // Client-side validation
+      if (!data.hasItems) {
+        throw new Error("Cart is empty");
+      }
+      if (data.subtotal <= 0) {
+        throw new Error("Cart total must be greater than 0");
+      }
+      if (data.tipAmount < 0) {
+        throw new Error("Tip cannot be negative");
+      }
+      if (data.paymentMethod === "stripe" && data.deliveryFee < 0) {
+        throw new Error("Invalid delivery fee");
+      }
+      return true;
+    },
   });
+// ─── ORDERS ────────────────────────────────────────
+export const useCreateOrder = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: CreateOrderDTO) => {
+      if (!data.deliveryType) {
+        throw new Error("Delivery type is required");
+      }
+      if (data.paymentMethod === "stripe" && !data.guestEmail && !data.userId) {
+        throw new Error("Email is required for card payment");
+      }
+      if ((data.tipAmount ?? 0) < 0) {
+        throw new Error("Tip amount cannot be negative");
+      }
+
+      return ordersAPI.create(data);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["cart"] });
+      qc.invalidateQueries({ queryKey: ["userOrders"] });
+    },
+  });
+};
 
 export const useOrder = (id: string) =>
   useQuery({

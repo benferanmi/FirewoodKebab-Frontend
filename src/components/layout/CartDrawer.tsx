@@ -22,7 +22,6 @@ const CartDrawer = () => {
     updateQuantity,
     removeItem,
     getSubtotal,
-    getDeliveryFee,
     getDiscount,
     getTotal,
     getItemCount,
@@ -219,16 +218,7 @@ const CartDrawer = () => {
                         {formatPrice(getSubtotal())}
                       </span>
                     </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-slate-400">Delivery</span>
-                      <span
-                        className={`font-semibold ${getDeliveryFee() === 0 ? "text-emerald-400" : "text-white"}`}
-                      >
-                        {getDeliveryFee() > 0
-                          ? formatPrice(getDeliveryFee())
-                          : "FREE"}
-                      </span>
-                    </div>
+                   
 
                     {/* Discount Badge */}
                     {getDiscount() > 0 && (
