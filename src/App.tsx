@@ -28,6 +28,8 @@ import { useAuthStore } from "./store/authStore";
 import { useNotifications, useSocketInit } from "./hooks/useSocket";
 import CheckoutLocationPage from "./pages/CheckoutLocationPage";
 import { useSeoStore } from "./store/seoStore";
+import OrderSuccessPage from "./pages/OrderSuccessPage";
+import GuestOrderTrackingPage from "./components/order/GuestOrderTrackingPage";
 
 const queryClient = new QueryClient();
 
@@ -101,6 +103,8 @@ const App = () => {
                 path="/order/:id/confirmed"
                 element={<OrderConfirmedPage />}
               />
+              <Route path="/track/:guestToken" element={<GuestOrderTrackingPage />} />
+              <Route path="/order-success" element={<OrderSuccessPage />} />
               <Route path="/order/:id/track" element={<OrderTrackingPage />} />
               <Route path="/account" element={<AccountPage />} />
               <Route path="/terms" element={<TermsPage />} />

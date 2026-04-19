@@ -21,6 +21,7 @@ import type {
 import { Banner, promotionsAPI } from "@/services/promotion";
 import { deliveryAPI } from "@/services/api/delivery";
 import { settingsAPI } from "@/services/api/settings";
+import client from "@/services/api/client";
 
 // ─── MENU ──────────────────────────────────────────
 export const useCategories = () =>
@@ -213,6 +214,27 @@ export const useCancelOrder = () => {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["userOrders"] }),
   });
 };
+
+export const useGuestOrder = (guestToken: string) =>
+  useQuery({
+    queryKey: ["guestOrder", guestToken],
+    queryFn: async () => {
+      const { data } = await client.get(`/orders/guest/${guestToken}`);
+      return data.data;
+    },
+    enabled: !!guestToken,
+  });
+
+export const useGuestOrderTracking = (guestToken: string) =>
+  useQuery({
+    queryKey: ["guestOrderTracking", guestToken],
+    queryFn: async () => {
+      const { data } = await client.get(`/orders/guest/${guestToken}/track`);
+      return data.data;
+    },
+    enabled: !!guestToken,
+    refetchInterval: 15000,
+  });
 
 // ─── PAYMENT ───────────────────────────────────────
 export const useInitPayment = () =>

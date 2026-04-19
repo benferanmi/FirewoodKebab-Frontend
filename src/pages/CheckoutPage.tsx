@@ -211,7 +211,20 @@ const CheckoutPage = () => {
       toast.success("Order placed successfully!");
 
       // Redirect to orders page
-      navigate("/account#orders", { replace: true });
+      navigate("/order-success", {
+        replace: true,
+        state: {
+          order: {
+            id: order.id,
+            orderNumber: order.orderNumber,
+            total: order.total,
+            totalWithTip: order.totalWithTip,
+            guestToken: order.guestToken,
+            guestEmail: !user ? guestEmail : undefined,
+            paymentMethod: paymentMethod,
+          },
+        },
+      });
     } catch (error: any) {
       const msg =
         error.response?.data?.message ||
