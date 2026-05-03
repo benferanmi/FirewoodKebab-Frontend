@@ -142,7 +142,7 @@ const ReviewForm = ({
             {isEditing ? 'Edit your review' : 'How was your order?'}
           </p>
           {isEditing && (
-            <span className="text-xs text-muted-foreground bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+            <span className="text-xs text-muted-foreground bg-primary/10 px-2 py-0.5 rounded-full">
               Editing
             </span>
           )}
