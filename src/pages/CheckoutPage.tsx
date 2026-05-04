@@ -440,9 +440,34 @@ const CheckoutPage = () => {
                                   .street2 &&
                                   `, ${deliveryStore.locationData.selectedAddress.street2}`}
                               </p>
-                              <p className="text-xs text-muted-foreground">
-                                {deliveryStore.locationData.zipCode}
-                              </p>
+                              {/* Show ZIP if it exists */}
+                              {deliveryStore.locationData.zipCode && (
+                                <p className="text-xs text-muted-foreground">
+                                  {deliveryStore.locationData.zipCode}
+                                </p>
+                              )}
+                              {/* Show Coordinates if ZIP doesn't exist (geolocation path) */}
+                              {!deliveryStore.locationData.zipCode &&
+                                deliveryStore.locationData.latitude &&
+                                deliveryStore.locationData.longitude && (
+                                  <p
+                                    className="text-xs text-muted-foreground mt-1"
+                                    style={{ fontStyle: "italic" }}
+                                  >
+                                    📍{" "}
+                                    {deliveryStore.locationData.latitude.toFixed(
+                                      4,
+                                    )}
+                                    ,{" "}
+                                    {deliveryStore.locationData.longitude.toFixed(
+                                      4,
+                                    )}
+                                    <br />
+                                    <span style={{ fontSize: "0.65rem" }}>
+                                      Validated using geolocation
+                                    </span>
+                                  </p>
+                                )}
                             </div>
                             <Link
                               to="/checkout/location"
@@ -455,7 +480,7 @@ const CheckoutPage = () => {
                         </motion.div>
                       )}
 
-                      {/* ZIP Code Only (if using geolocation without saved address) */}
+                      {/* ZIP Code Only (if no saved address but ZIP was used) */}
                       {!deliveryStore.locationData?.selectedAddress &&
                         deliveryStore.locationData?.zipCode && (
                           <motion.div
@@ -470,6 +495,46 @@ const CheckoutPage = () => {
                                 </p>
                                 <p className="text-sm text-foreground">
                                   {deliveryStore.locationData.zipCode}
+                                </p>
+                              </div>
+                              <Link
+                                to="/checkout/location"
+                                className="text-xs font-semibold whitespace-nowrap ml-4"
+                                style={{ color: "hsl(var(--primary))" }}
+                              >
+                                Change
+                              </Link>
+                            </div>
+                          </motion.div>
+                        )}
+
+                      {/* Coordinates Only (if no saved address, no ZIP, but geolocation used) */}
+                      {!deliveryStore.locationData?.selectedAddress &&
+                        !deliveryStore.locationData?.zipCode &&
+                        deliveryStore.locationData?.latitude &&
+                        deliveryStore.locationData?.longitude && (
+                          <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            className="p-4 rounded-lg bg-secondary/50 border border-border space-y-3"
+                          >
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p
+                                  className="text-sm font-semibold text-foreground mb-1"
+                                  style={{ fontStyle: "italic" }}
+                                >
+                                  📍 Delivery Location (Validated using
+                                  geolocation)
+                                </p>
+                                <p className="text-sm text-foreground">
+                                  {deliveryStore.locationData.latitude.toFixed(
+                                    4,
+                                  )}
+                                  ,{" "}
+                                  {deliveryStore.locationData.longitude.toFixed(
+                                    4,
+                                  )}
                                 </p>
                               </div>
                               <Link

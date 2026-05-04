@@ -184,6 +184,21 @@ const OrderTrackingPage = () => {
             </div>
           )} */}
 
+          {/* Note from driver/staff (if exists) */}
+          {getLatestNote(trackingData, currentStatus) && (
+            <div
+              className="mt-4 p-3 rounded-lg"
+              style={{
+                background: "hsl(var(--primary) / 0.1)",
+                border: "1px solid hsl(var(--primary) / 0.3)",
+              }}
+            >
+              <p className="text-sm text-foreground italic">
+                💬 {getLatestNote(trackingData, currentStatus)}
+              </p>
+            </div>
+          )}
+
           {/* Last Update Timestamp */}
           {lastUpdate && (
             <p className="text-xs text-muted-foreground mt-3">
@@ -368,7 +383,19 @@ const OrderTrackingPage = () => {
     </main>
   );
 };
+function getLatestNote(
+  trackingData: any,
+  currentStatus: string,
+): string | null {
+  if (!trackingData?.statusHistory) return null;
 
+  // Find the latest status entry matching current status that has a note
+  const latestStatusWithNote = trackingData.statusHistory.findLast(
+    (entry: any) => entry.status === currentStatus && entry.note,
+  );
+
+  return latestStatusWithNote?.note || null;
+}
 function parseTimeToMinutes(timeString: string | Date | null): number | null {
   if (!timeString) return null;
 

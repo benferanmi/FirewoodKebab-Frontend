@@ -45,19 +45,27 @@ const LocationValidationStep = ({
   const [zipCode, setZipCode] = useState(
     deliveryStore.locationData?.zipCode || "",
   );
-  const [latitude, setLatitude] = useState(deliveryStore.locationData?.latitude);
+  const [latitude, setLatitude] = useState(
+    deliveryStore.locationData?.latitude,
+  );
   const [longitude, setLongitude] = useState(
     deliveryStore.locationData?.longitude,
   );
   const [showGeolocationError, setShowGeolocationError] = useState(false);
-  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(
+    null,
+  );
 
   // ── Address-form state (shown after ZIP is validated) ──
   const [subStep, setSubStep] = useState<DeliverySubStep>("zone-check");
   const [validatedZip, setValidatedZip] = useState("");
   const [validatedDeliveryInfo, setValidatedDeliveryInfo] = useState<any>(null);
-  const [validatedLatitude, setValidatedLatitude] = useState<number | undefined>();
-  const [validatedLongitude, setValidatedLongitude] = useState<number | undefined>();
+  const [validatedLatitude, setValidatedLatitude] = useState<
+    number | undefined
+  >();
+  const [validatedLongitude, setValidatedLongitude] = useState<
+    number | undefined
+  >();
 
   const [addressLabel, setAddressLabel] = useState("Home");
   const [street, setStreet] = useState("");
@@ -83,7 +91,9 @@ const LocationValidationStep = ({
     }
 
     try {
-      const response = await checkDelivery.mutateAsync({ zipCode: zipCode.trim() });
+      const response = await checkDelivery.mutateAsync({
+        zipCode: zipCode.trim(),
+      });
 
       if (!response.data.data.available) {
         toast.error(
@@ -210,11 +220,19 @@ const LocationValidationStep = ({
       toast.error("Please enter your street address");
       return;
     }
-    if (!addressZip.trim()) {
+    // ZIP is required ONLY if lat/long don't exist
+    const hasCoordinates = validatedLatitude && validatedLongitude;
+
+    if (!hasCoordinates && !addressZip.trim()) {
       toast.error("Please enter your ZIP code");
       return;
     }
-    if (!/^\d{5}(-\d{4})?$/.test(addressZip.trim())) {
+
+    if (
+      !hasCoordinates &&
+      addressZip.trim() &&
+      !/^\d{5}(-\d{4})?$/.test(addressZip.trim())
+    ) {
       toast.error("Please enter a valid ZIP code");
       return;
     }
@@ -453,7 +471,6 @@ const LocationValidationStep = ({
 
             {/* ── CONDITIONAL CONTENT ── */}
             <AnimatePresence mode="wait">
-
               {/* ══ DELIVERY — ZONE CHECK ══ */}
               {method === "delivery" && subStep === "zone-check" && (
                 <motion.div
@@ -466,7 +483,9 @@ const LocationValidationStep = ({
                   {/* Saved Addresses */}
                   {user && savedAddresses && savedAddresses.length > 0 && (
                     <div className="space-y-3">
-                      <Label className="font-semibold">Use a Saved Address</Label>
+                      <Label className="font-semibold">
+                        Use a Saved Address
+                      </Label>
                       <div className="space-y-2 max-h-48 overflow-y-auto">
                         {addressesLoading ? (
                           <div className="flex justify-center py-6">
@@ -741,26 +760,76 @@ const LocationValidationStep = ({
                     />
                   </div>
 
-                  {/* ZIP Code (pre-filled, editable) */}
-                  <div className="space-y-2">
-                    <Label className="font-semibold">
-                      ZIP Code <span className="text-destructive">*</span>
-                    </Label>
-                    <Input
-                      value={addressZip}
-                      onChange={(e) => setAddressZip(e.target.value)}
-                      placeholder="e.g. 92614"
-                      maxLength={10}
-                      className="rounded-xl h-11"
-                      style={{
-                        background: "rgba(255,255,255,0.04)",
-                        border: "1px solid hsl(var(--border))",
-                      }}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Pre-filled from your coverage check — update if different
-                    </p>
-                  </div>
+                  {/* Conditional: ZIP Code (if used) OR Coordinates (if geolocation) */}
+                  {validatedLatitude && validatedLongitude ? (
+                    // ── GEOLOCATION PATH ──
+                    <div className="space-y-2">
+                      <Label className="font-semibold">
+                        📍 Location (Validated using geolocation)
+                      </Label>
+                      <div
+                        className="p-4 rounded-xl"
+                        style={{
+                          background: "rgba(255,255,255,0.03)",
+                          border: "1px solid hsl(var(--border))",
+                        }}
+                      >
+                        <p className="text-sm text-foreground mb-3">
+                          <span
+                            style={{
+                              fontStyle: "italic",
+                              color: "hsl(var(--muted-foreground))",
+                            }}
+                          >
+                            Validated using geolocation
+                          </span>
+                        </p>
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-muted-foreground">
+                              Latitude:
+                            </span>
+                            <span className="font-semibold text-foreground">
+                              {validatedLatitude.toFixed(4)}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-muted-foreground">
+                              Longitude:
+                            </span>
+                            <span className="font-semibold text-foreground">
+                              {validatedLongitude.toFixed(4)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Read-only. To change location, go back and re-validate.
+                      </p>
+                    </div>
+                  ) : (
+                    // ── ZIP CODE PATH ──
+                    <div className="space-y-2">
+                      <Label className="font-semibold">
+                        ZIP Code <span className="text-destructive">*</span>
+                      </Label>
+                      <Input
+                        value={addressZip}
+                        onChange={(e) => setAddressZip(e.target.value)}
+                        placeholder="e.g. 92614"
+                        maxLength={10}
+                        className="rounded-xl h-11"
+                        style={{
+                          background: "rgba(255,255,255,0.04)",
+                          border: "1px solid hsl(var(--border))",
+                        }}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Pre-filled from your coverage check — update if
+                        different
+                      </p>
+                    </div>
+                  )}
 
                   {/* State / Country (read-only) */}
                   <div
@@ -792,7 +861,11 @@ const LocationValidationStep = ({
                   <motion.div whileHover={{ y: -1 }} className="pt-2">
                     <Button
                       onClick={handleConfirmAddress}
-                      disabled={!street.trim() || !addressZip.trim()}
+                      disabled={
+                        !street.trim() ||
+                        (!addressZip.trim() &&
+                          !(validatedLatitude && validatedLongitude))
+                      }
                       className="w-full rounded-xl h-11 font-semibold gap-2"
                       style={{
                         background: "hsl(var(--primary))",
